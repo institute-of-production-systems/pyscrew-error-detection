@@ -1,15 +1,27 @@
-# Supervised Error Detection in Screw Driving Operations
+# Multi-Dataset Error Detection in Industrial Screw Driving Operations
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![MLflow](https://img.shields.io/badge/MLflow-tracking-green.svg)](https://mlflow.org/)
+[![Work in Progress](https://img.shields.io/badge/Status-WIP-orange.svg)](https://github.com/Institute-of-Production-Systems/pyscrew-error-detection)
+[![Research](https://img.shields.io/badge/Type-Research-purple.svg)](https://ips.mb.tu-dortmund.de/)
 
-> This repository contains the code and results for our paper **"Multi-class Error Detection in Industrial Screw Driving Operations Using Machine Learning"** *(yet to be)* presented at ITISE 2025 (11th International Conference on Time Series and Forecasting) in Gran Canaria, Spain.
+This repository provides a comprehensive machine learning framework for supervised error detection across all [PyScrew](https://github.com/nikolaiwest/pyscrew) datasets (s01-s06). Building upon our established methodology from the [ITISE 2025 paper](https://github.com/nikolaiwest/2025-supervised-error-detection-itise), this project extends the analysis to cover the complete spectrum of industrial screw driving scenarios and error types documented in the PyScrew dataset collection.
 
-## 🎯 Abstract
+## Overview
 
-Recent advances in machine learning have significantly improved anomaly detection in industrial screw driving operations. However, most existing approaches focus on binary classification of normal versus anomalous operations or employ unsupervised methods to detect novel patterns. This paper introduces a comprehensive dataset of screw driving operations encompassing **25 distinct error types** and presents a **multi-tiered analysis framework** for error-specific classification. Our results demonstrate varying detectability across different error types and establish the feasibility of multi-class error detection in industrial settings.
+Industrial screw driving operations are critical in manufacturing processes, yet prone to various failure modes that can compromise product quality and production efficiency. This framework implements multi-class error detection algorithms capable of identifying and classifying 25+ distinct error types across different assembly conditions, screw materials, and operational parameters.
 
+**Key Features:**
+- **Multi-dataset compatibility**: Supports all PyScrew scenarios (s01-s06)
+- **Comprehensive error taxonomy**: Handles diverse failure modes from thread deformation to torque anomalies
+- **Scalable ML pipeline**: Automated preprocessing, feature extraction, and model training
+- **Reproducible experiments**: Standardized evaluation protocols with cross-validation
+- **Industrial applicability**: Real-world error patterns from production environments
+
+## Research Foundation
+
+This work extends our previous research on supervised error detection in industrial screw driving operations, originally presented at ITISE 2025. The framework has been generalized to accommodate the full range of PyScrew datasets, enabling comparative analysis across different operational scenarios and assembly conditions.
 ## 🏗️ Project Structure
 
 ```
@@ -52,7 +64,7 @@ Recent advances in machine learning have significantly improved anomaly detectio
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/nikolaiwest/2025-supervised-error-detection-itise.git
+   git clone https://github.com/Institute-of-Production-Systems/pyscrew-error-detection.git
    cd 2025-supervised-error-detection-itise
    ```
 
@@ -133,7 +145,7 @@ from src.experiments import ExperimentRunner
 runner = ExperimentRunner(
     experiment_name="binary_vs_ref",
     model_selection="paper",
-    scenario_id="s04",           # Fixed dataset
+    scenario_id="s04",           # Configurable dataset
     target_length=2000,          # Fixed preprocessing  
     cv_folds=5,                  # Configurable via CLI
     random_seed=42,              # Configurable via CLI
@@ -171,31 +183,11 @@ mlflow ui --port 5000
 # Open http://localhost:5000
 ```
 
-### Result Files
-
-Results are saved to `results/s04/<experiment_name>/`:
-- `results.csv` - Performance metrics for all model-dataset combinations
-- `images/` - Performance visualizations and confusion matrices
-- MLflow artifacts - Detailed experiment tracking
-
-### Example Results
-
-**Binary Classification Performance (F1-Score):**
-```
-Model                   | 101_deformed-thread | 102_filed-screw-tip | 103_glued-screw-tip
-------------------------|---------------------|---------------------|-------------------
-ROCKET                  | 0.95 ± 0.03         | 0.89 ± 0.05         | 0.92 ± 0.04
-TS-Forest               | 0.93 ± 0.04         | 0.87 ± 0.06         | 0.90 ± 0.05
-Random Forest           | 0.87 ± 0.06         | 0.82 ± 0.07         | 0.85 ± 0.08
-SVM                     | 0.83 ± 0.09         | 0.79 ± 0.11         | 0.81 ± 0.10
-Random Baseline         | 0.45 ± 0.12         | 0.43 ± 0.11         | 0.47 ± 0.10
-```
-
 ## 🔬 Technical Details
 
 ### Data Processing Pipeline
 
-1. **Loading**: PyScrew interface to S04 dataset (25 error types)
+1. **Loading**: PyScrew interface to configurable dataset (s01-s06)
 2. **PAA Reduction**: 2000 → 200 time points (configurable)  
 3. **Normalization**: Z-score standardization per time series
 4. **Sampling**: Generate datasets based on experiment type
@@ -223,21 +215,24 @@ Random Baseline         | 0.45 ± 0.12         | 0.43 ± 0.11         | 0.47 ± 
 
 See `requirements.txt` for complete dependencies.
 
-## 🎯 Citation
+## 🚧 Development Status
 
-If you use this code or dataset in your research, please cite our paper:
+**Current Phase:** Multi-dataset integration and model optimization
 
-```bibtex
-@inproceedings{west2025supervised,
-  title={Multi-class Error Detection in Industrial Screw Driving Operations Using Machine Learning},
-  author={West, Nikolai},
-  booktitle={11th International Conference on Time Series and Forecasting (ITISE)},
-  year={2025},
-  address={Gran Canaria, Spain},
-  publisher={ITISE},
-  note={Accepted for publication}
-}
-```
+**Completed:**
+- ✅ Framework forked from ITISE 2025 methodology
+   - ✅ MLflow tracking and result visualization
+   - ✅ PyScrew s04 dataset integration and validation
+
+**In Progress:**
+- 🔄 Integration of PyScrew datasets s01, s02, s03, s05, s06
+- 🔄 Cross-dataset performance analysis
+- 🔄 Model hyperparameter optimization for diverse scenarios
+
+**Planned:**
+- 📋 Comparative analysis across all dataset scenarios
+- 📋 Publication of comprehensive multi-dataset results
+- 📋 Extended model evaluation framework
 
 ## 🤝 Contributing
 
