@@ -7,7 +7,7 @@ import numpy as np
 
 from src.utils.exceptions import SamplingError
 
-from .experiment_dataset import ExperimentDataset
+from ..experiments.experiment_dataset import ExperimentDataset
 
 
 def sample_datasets(

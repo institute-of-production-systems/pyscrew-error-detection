@@ -16,13 +16,13 @@ from src.mlflow import MLflowManager, launch_server
 from src.models import get_classifier_dict
 from src.utils import get_logger
 
+from ..sampling import sample_datasets
 from ..utils.exceptions import (
     DatasetPreparationError,
     FatalExperimentError,
     ModelEvaluationError,
 )
 from .experiment_dataset import ExperimentDataset
-from .sampling import sample_datasets
 
 
 class ExperimentRunner:
