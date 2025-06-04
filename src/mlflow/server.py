@@ -1,9 +1,10 @@
 import atexit
-import logging
 import os
 import subprocess
 import sys
 import time
+
+from src.utils import get_logger
 
 # Store the mlflow process globally so we can terminate it properly
 _mlflow_process = None
@@ -23,7 +24,7 @@ def launch_server(port=5000, wait=True):
     global _mlflow_process
 
     # Set up logger with the same format as your application
-    logger = logging.getLogger("src.experiments.server")
+    logger = get_logger(__name__)
 
     # If server is already running, return the process
     if _mlflow_process is not None and _mlflow_process.poll() is None:
@@ -130,7 +131,7 @@ def stop_server():
     global _mlflow_process
 
     # Set up logger
-    logger = logging.getLogger("src.experiments.server")
+    logger = logger = get_logger(__name__)
 
     if _mlflow_process is not None:
         if _mlflow_process.poll() is None:  # If process is still running

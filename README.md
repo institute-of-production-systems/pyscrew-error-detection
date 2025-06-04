@@ -22,6 +22,7 @@ Industrial screw driving operations are critical in manufacturing processes, yet
 ## Research Foundation
 
 This work extends our previous research on supervised error detection in industrial screw driving operations, originally presented at ITISE 2025. The framework has been generalized to accommodate the full range of PyScrew datasets, enabling comparative analysis across different operational scenarios and assembly conditions.
+
 ## 🏗️ Project Structure
 
 ```

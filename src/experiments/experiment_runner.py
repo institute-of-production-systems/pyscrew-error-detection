@@ -14,6 +14,7 @@ from src.evaluation.results import (
 )
 from src.mlflow import MLflowManager, launch_server
 from src.models import get_classifier_dict
+from src.sampling import sample_datasets
 from src.utils import get_logger
 
 from ..utils.exceptions import (
@@ -22,7 +23,6 @@ from ..utils.exceptions import (
     ModelEvaluationError,
 )
 from .experiment_dataset import ExperimentDataset
-from .sampling import sample_datasets
 
 
 class ExperimentRunner:
