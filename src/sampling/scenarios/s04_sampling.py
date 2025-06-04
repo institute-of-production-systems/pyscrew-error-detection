@@ -5,6 +5,7 @@ from typing import Callable, Dict, List, Tuple
 
 import numpy as np
 
+from src.sampling.groups import load_groups
 from src.utils.exceptions import SamplingError
 
 from ...experiments.experiment_dataset import ExperimentDataset
@@ -168,21 +169,7 @@ def _get_multiclass_with_groups(
     datasets = []
 
     # Load error groups from JSON file based on scenario ID
-    groups_file = Path(f"src/sampling/groups/{scenario_id}.json")
-
-    # Ensure directory exists
-    os.makedirs(groups_file.parent, exist_ok=True)
-
-    # Check if file exists, if not provide helpful error
-    if not groups_file.exists():
-        raise FileNotFoundError(
-            f"Error groups configuration file not found at {groups_file}. "
-            f"Please create the file with appropriate error groupings for scenario {scenario_id}."
-        )
-
-    # Load error groups from JSON file
-    with open(groups_file, "r") as f:
-        error_groups = json.load(f)
+    error_groups = load_groups("s04")
 
     # Process each group
     for group_name, group_errors in error_groups.items():
