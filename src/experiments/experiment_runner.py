@@ -14,9 +14,9 @@ from src.evaluation.results import (
 )
 from src.mlflow import MLflowManager, launch_server
 from src.models import get_classifier_dict
+from src.sampling import sample_datasets
 from src.utils import get_logger
 
-from ..sampling import sample_datasets
 from ..utils.exceptions import (
     DatasetPreparationError,
     FatalExperimentError,

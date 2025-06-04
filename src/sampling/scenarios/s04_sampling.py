@@ -1,45 +1,50 @@
 import json
 import os
 from pathlib import Path
-from typing import List, Tuple
+from typing import Callable, Dict, List, Tuple
 
 import numpy as np
 
 from src.utils.exceptions import SamplingError
 
-from ..experiments.experiment_dataset import ExperimentDataset
+from ...experiments.experiment_dataset import ExperimentDataset
 
 
-def sample_datasets(
-    processed_data: Tuple[np.ndarray, np.ndarray, np.ndarray],
-    experiment_name: str,
-    scenario_id: str,
-) -> List[ExperimentDataset]:
+def get_experiment_functions(
+    experiment_names: List[str],
+) -> Dict[
+    str, Callable[[Tuple[np.ndarray, np.ndarray, np.ndarray]], List[ExperimentDataset]]
+]:
     """
-    Generate datasets for different experiment configurations based on experiment type.
+    Returns dict of lazy functions for s04 experiments.
 
-    Parameters:
-    -----------
-    data : Tuple[np.ndarray, np.ndarray, np.ndarray]
-        Tuple of (torque_values, class_values, scenario_condition)
-    experiment_name : str
-        Type of experiment to run (binary_vs_ref, binary_vs_all, multiclass_all, multiclass_group)
-    scenario_id : str, optional
-        Scenario identifier used to load appropriate configurations
+    TODO: Prepared to be called with a list, even though the experiment runner
+    currently just calls it with a single experiment name. Might expand or simplify
+    this in the future.
     """
-    torque, classes, conditions = processed_data
 
-    # Dispatch to the appropriate sampling strategy based on experiment type
-    if experiment_name == "binary_vs_ref":
-        return _get_binary_vs_ref_data(torque, classes, conditions)
-    elif experiment_name == "binary_vs_all":
-        return _get_binary_vs_all_data(torque, classes, conditions)
-    elif experiment_name == "multiclass_with_groups":
-        return _get_multiclass_with_groups(torque, classes, conditions, scenario_id)
-    elif experiment_name == "multiclass_with_all":
-        return _get_multiclass_with_all(torque, classes, conditions)
-    else:
-        raise ValueError(f"Unknown experiment type: {experiment_name}")
+    functions = {}
+    for exp_name in experiment_names:
+        if exp_name == "binary_vs_ref":
+            functions[exp_name] = lambda processed_data: _get_binary_vs_ref_data(
+                *processed_data
+            )
+        elif exp_name == "binary_vs_all":
+            functions[exp_name] = lambda processed_data: _get_binary_vs_all_data(
+                *processed_data
+            )
+        elif exp_name == "multiclass_with_groups":
+            functions[exp_name] = lambda processed_data: _get_multiclass_with_groups(
+                *processed_data, "s04"
+            )
+        elif exp_name == "multiclass_with_all":
+            functions[exp_name] = lambda processed_data: _get_multiclass_with_all(
+                *processed_data
+            )
+        else:
+            raise ValueError(f"Unknown experiment type: {exp_name}")
+
+    return functions
 
 
 def _get_binary_vs_ref_data(
@@ -163,7 +168,7 @@ def _get_multiclass_with_groups(
     datasets = []
 
     # Load error groups from JSON file based on scenario ID
-    groups_file = Path(f"src/experiments/groups/{scenario_id}.json")
+    groups_file = Path(f"src/sampling/groups/{scenario_id}.json")
 
     # Ensure directory exists
     os.makedirs(groups_file.parent, exist_ok=True)

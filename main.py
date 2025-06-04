@@ -9,7 +9,7 @@ from src.utils.exceptions import FatalExperimentError
 
 # Default configuration
 DEFAULT_SETTINGS = {
-    "scenario_id": "s01",
+    "scenario_id": "s04",
     "target_length": 2000,
     "screw_positions": "left",
     "cv_folds": 5,
