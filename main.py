@@ -9,7 +9,7 @@ from src.utils.exceptions import FatalExperimentError
 
 # Default configuration
 DEFAULT_SETTINGS = {
-    "scenario_id": "s04",
+    "scenario_id": "s06",
     "target_length": 2000,
     "screw_positions": "left",
     "cv_folds": 5,
@@ -19,11 +19,20 @@ DEFAULT_SETTINGS = {
     "log_level": "INFO",
 }
 
-EXPERIMENT_OPTIONS = [
-    "binary_vs_ref",
-    "binary_vs_all",
-    "multiclass_with_groups",
+EXPERIMENT_OPTIONS = [  # temp for testing
+    # s04
+    # "binary_vs_ref",
+    # "binary_vs_all",
+    # "multiclass_with_groups",
+    # "multiclass_with_all",
+    # s05
+    # "binary_for_extremes",
+    # "multiclass_with_all",
+    # "multiclass_within_groups",
+    # s06
+    "binary_for_extremes",
     "multiclass_with_all",
+    "multiclass_within_groups",
 ]
 
 MODEL_SELECTIONS = ["debug", "fast", "paper", "full", "sklearn", "sktime"]
