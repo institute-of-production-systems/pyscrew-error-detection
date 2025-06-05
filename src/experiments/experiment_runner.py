@@ -127,9 +127,12 @@ class ExperimentRunner:
         try:
             self.logger.info("Loading and preprocessing data...")
 
-            # Load and preprocess time series data
+            # Load and preprocess time series data using PyScrew
+            # https://github.com/nikolaiwest/pyscrew
             raw_data = load_data(
-                self.scenario_id, self.target_length, self.screw_positions
+                scenario_id=self.scenario_id,
+                target_length=self.target_length,
+                screw_positions=self.screw_positions,
             )
             processed_data = process_data(raw_data, target_length=200)
 

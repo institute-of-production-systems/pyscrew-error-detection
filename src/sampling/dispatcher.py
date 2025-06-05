@@ -6,4 +6,15 @@ def get_sampling_functions(scenario_id, experiment_names):
 
         return get_experiment_functions(experiment_names)
 
-    # elif etc. will follow in the next updates
+    elif scenario_id == "s05":
+        from .scenarios.s05_sampling import get_experiment_functions
+
+        return get_experiment_functions(experiment_names)
+
+    elif scenario_id == "s06":
+        from .scenarios.s06_sampling import get_experiment_functions
+
+        return get_experiment_functions(experiment_names)
+
+    else:
+        raise ValueError(f"Unknown scenario: {scenario_id}")
