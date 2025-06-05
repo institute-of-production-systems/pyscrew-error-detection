@@ -10,5 +10,5 @@ def load_groups(group_name: str) -> Dict[str, Any]:
     if not groups_file.exists():
         raise FileNotFoundError(f"Group configuration file not found: {groups_file}. ")
 
-    with open(f"{group_name}.json", "r") as file:
+    with open(f"{groups_file}", "r") as file:
         return json.load(file)
