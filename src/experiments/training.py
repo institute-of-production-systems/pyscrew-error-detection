@@ -87,10 +87,10 @@ def train_single_fold(
             fold_index=fold_index,
             metrics={
                 "error": 1.0,
-                "accuracy": 0.0,
-                "f1_score": 0.0,
-                "precision": 0.0,
-                "recall": 0.0,
+                "accuracy": None,
+                "f1_score": None,
+                "precision": None,
+                "recall": None,
             },
             y_true=np.array([0]),  # Minimal arrays to satisfy validation
             y_pred=np.array([0]),

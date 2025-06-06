@@ -8,6 +8,8 @@
 
 This repository provides a comprehensive machine learning framework for supervised error detection across all [PyScrew](https://github.com/nikolaiwest/pyscrew) datasets (s01-s06). Building upon our established methodology from the [ITISE 2025 paper](https://github.com/nikolaiwest/2025-supervised-error-detection-itise), this project extends the analysis to cover the complete spectrum of industrial screw driving scenarios and error types documented in the PyScrew dataset collection.
 
+> ⚠️ **Note:** This project is under active development. Features may change or break.
+
 ## Overview
 
 Industrial screw driving operations are critical in manufacturing processes, yet prone to various failure modes that can compromise product quality and production efficiency. This framework implements multi-class error detection algorithms capable of identifying and classifying 25+ distinct error types across different assembly conditions, screw materials, and operational parameters.
@@ -33,11 +35,11 @@ This work extends our previous research on supervised error detection in industr
 ├── src/                      # Source code
 │   ├── analysis/             # Analysis modules (legacy)
 │   ├── data/                 # Data loading and preprocessing
-│   │   ├── load.py          # PyScrew data interface
-│   │   └── process.py       # PAA and normalization
+│   │   ├── load.py           # PyScrew data interface
+│   │   └── process.py        # PAA and normalization
 │   ├── evaluation/           # Metrics and result containers
-│   │   ├── apply_metrics.py # Sklearn metrics wrapper
-│   │   └── results/         # 4-level result hierarchy
+│   │   ├── get_metrics.py    # Sklearn metrics wrapper
+│   │   └── results/          # 4-level result hierarchy
 │   ├── experiments/          # Experiment orchestration
 │   │   ├── experiment_runner.py  # Main experiment runner
 │   │   ├── sampling.py           # Dataset generation strategies
