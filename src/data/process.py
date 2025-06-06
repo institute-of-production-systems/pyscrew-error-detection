@@ -2,6 +2,10 @@ from typing import Tuple
 
 import numpy as np
 
+from src.utils import get_logger
+
+logger = get_logger(__name__)
+
 
 def _apply_paa(torque_values: np.ndarray, target_length: int) -> np.ndarray:
     """
@@ -37,16 +41,21 @@ def _apply_paa(torque_values: np.ndarray, target_length: int) -> np.ndarray:
     """
     n_samples, original_length = torque_values.shape
 
+    logger.debug(
+        f"Applying PAA: {original_length} --> {target_length} time points for {n_samples} samples"
+    )
+
     # Handle the case where segments divide evenly
     if original_length % target_length == 0:
         segment_size = original_length // target_length
+        logger.debug(f"Using evenly divisible PAA with segment size {segment_size}")
         # Reshape and compute means along segments
         return np.mean(
             torque_values.reshape(n_samples, target_length, segment_size), axis=2
         )
 
     # For non-evenly divisible case, use a vectorized approach
-    # Create array of segment boundaries
+    logger.debug("Using non-evenly divisible PAA with boundary computation")
     bounds = np.linspace(0, original_length, target_length + 1).astype(int)
 
     # Initialize result array
@@ -86,6 +95,10 @@ def _normalize_data(torque_values: np.ndarray) -> np.ndarray:
     - The implementation uses numpy broadcasting for efficient computation
     - Normalization is performed independently for each sample (row)
     """
+    logger.debug(
+        f"Normalizing {torque_values.shape[0]} time series to zero mean and unit variance"
+    )
+
     # Calculate mean and std along time dimension for each sample
     mean = np.mean(torque_values, axis=1, keepdims=True)
     std = np.std(torque_values, axis=1, keepdims=True)
@@ -137,6 +150,11 @@ def process_data(
     """
     torque_values, class_values, scenario_condition = data
 
+    original_shape = torque_values.shape
+    logger.info(
+        f"Starting data preprocessing: {original_shape[0]} samples, {original_shape[1]} --> {target_length} time points"
+    )
+
     # 1. apply PAA for dimensionality reduction
     torque_values = _apply_paa(torque_values, target_length)
 
@@ -146,6 +164,10 @@ def process_data(
     # 3. check output integrity
     assert len(torque_values) == len(class_values)
     assert len(torque_values) == len(scenario_condition)
+
+    logger.info(
+        f"Preprocessing completed: {torque_values.shape[0]} samples, {torque_values.shape[1]} time points"
+    )
 
     # Return processed torque values and original labels/groups
     return torque_values, class_values, scenario_condition

@@ -127,9 +127,12 @@ class ExperimentRunner:
         try:
             self.logger.info("Loading and preprocessing data...")
 
-            # Load and preprocess time series data
+            # Load and preprocess time series data using PyScrew
+            # https://github.com/nikolaiwest/pyscrew
             raw_data = load_data(
-                self.scenario_id, self.target_length, self.screw_positions
+                scenario_id=self.scenario_id,
+                target_length=self.target_length,
+                screw_positions=self.screw_positions,
             )
             processed_data = process_data(raw_data, target_length=200)
 
@@ -195,15 +198,15 @@ class ExperimentRunner:
         finally:
             self.mlflow_manager.end_run()
 
-    def _run_dataset(self, dataset: ExperimentDataset) -> DatasetResult:
+    def _run_dataset(self, experiment_dataset: ExperimentDataset) -> DatasetResult:
         """Process all models on a single dataset."""
 
         # Initialize dataset result
         dataset_result = DatasetResult(
-            dataset_name=dataset.name,
+            dataset_name=experiment_dataset.name,
             dataset_tags={
                 key: value
-                for key, value in dataset.to_dict().items()
+                for key, value in experiment_dataset.to_dict().items()
                 if key not in ["name", "x_values", "y_values"]
             },
         )
@@ -212,7 +215,7 @@ class ExperimentRunner:
         self.mlflow_manager.start_dataset_run(dataset_result)
 
         # Update the split method for the current dataset
-        self._update_split_method(dataset)
+        self._update_split_method(experiment_dataset)
 
         try:
             # Process all models for this dataset
@@ -221,7 +224,7 @@ class ExperimentRunner:
                 self.logger.info(f"  Applying model {progress}: {model_name}")
 
                 try:
-                    model_result = self._run_model(dataset, model_name)
+                    model_result = self._run_model(experiment_dataset, model_name)
                     dataset_result.add_result(model_result)
 
                     # Log success

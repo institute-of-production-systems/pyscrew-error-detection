@@ -87,10 +87,10 @@ def train_single_fold(
             fold_index=fold_index,
             metrics={
                 "error": 1.0,
-                "accuracy": 0.0,
-                "f1_score": 0.0,
-                "precision": 0.0,
-                "recall": 0.0,
+                "accuracy": None,
+                "f1_score": None,
+                "precision": None,
+                "recall": None,
             },
             y_true=np.array([0]),  # Minimal arrays to satisfy validation
             y_pred=np.array([0]),
@@ -153,6 +153,6 @@ def _format_pred_for_evaluation(
 
 def _evaluate_fold_metrics(y_true: np.ndarray, y_pred: np.ndarray) -> dict:
     """Evaluate metrics for a single fold."""
-    from src.evaluation.apply_metrics import apply_metrics
+    from src.evaluation.get_metrics import get_metrics
 
-    return apply_metrics(y_true, y_pred)
+    return get_metrics(y_true, y_pred)

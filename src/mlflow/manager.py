@@ -69,13 +69,13 @@ class MLflowManager:
         # Set initial tags
         mlflow.set_tags(
             {
-                "experiment_type": experiment_result.experiment_name,
-                "scenario_id": scenario_id,
-                "model_selection": model_selection,
+                "scenario_id": scenario_id,  # e.g. "s04", "s05", "s06"...
+                "experiment_type": experiment_result.experiment_name,  # e.g. "binary_vs_ref"
+                "model_selection": model_selection,  # e.g. "fast", "paper", "full", etc.
                 "start_time": experiment_result.start_time,
-                "status": "running",
+                "status": "initialized",
                 "completed_datasets": "0",
-                "trained_models": "0",
+                "completed_trainings": "0",
             }
         )
 

@@ -1,2 +1,2 @@
-from .apply_metrics import apply_metrics
+from .get_metrics import get_metrics
 from .results import FoldResult, ModelResult, DatasetResult, ExperimentResult
