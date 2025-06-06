@@ -153,6 +153,6 @@ def _format_pred_for_evaluation(
 
 def _evaluate_fold_metrics(y_true: np.ndarray, y_pred: np.ndarray) -> dict:
     """Evaluate metrics for a single fold."""
-    from src.evaluation.apply_metrics import apply_metrics
+    from src.evaluation.get_metrics import get_metrics
 
-    return apply_metrics(y_true, y_pred)
+    return get_metrics(y_true, y_pred)
