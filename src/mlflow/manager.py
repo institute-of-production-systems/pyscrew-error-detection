@@ -60,24 +60,27 @@ class MLflowManager:
 
     def start_experiment_run(self, experiment_result: ExperimentResult) -> None:
         """Initialize main experiment run with basic structure."""
+
         scenario_id = experiment_result.get_scenario_id()
         model_selection = experiment_result.get_model_selection()
+        experiment_name = experiment_result.get_experiment_name()
         run_name = f"run_{scenario_id}_{model_selection}"
+
+        # Initialize a result dict to hold all experiment tags (both static and dynamic)
+        experiment_tags_dict = {
+            "scenario_id": scenario_id,  # e.g. "s04", "s05", "s06"...
+            "model_selection": model_selection,  # e.g. "fast", "paper", "full", etc.
+            "experiment_type": experiment_result.experiment_name,  # e.g. "binary_vs_ref"
+            "start_time": experiment_result.start_time,
+            "status": "initialized",
+            "completed_datasets": "0",
+            "completed_trainings": "0",
+        }
 
         mlflow.start_run(run_name=run_name, nested=False)
 
         # Set initial tags
-        mlflow.set_tags(
-            {
-                "scenario_id": scenario_id,  # e.g. "s04", "s05", "s06"...
-                "experiment_type": experiment_result.experiment_name,  # e.g. "binary_vs_ref"
-                "model_selection": model_selection,  # e.g. "fast", "paper", "full", etc.
-                "start_time": experiment_result.start_time,
-                "status": "initialized",
-                "completed_datasets": "0",
-                "completed_trainings": "0",
-            }
-        )
+        mlflow.set_tags(experiment_tags_dict)
 
         self.logger.info(f"Started experiment run: '{run_name}'")
 

@@ -10,12 +10,19 @@ from .model_result import ModelResult
 class ExperimentResult:
     """Results from running a complete experiment across multiple datasets."""
 
-    def __init__(self, experiment_name: str, model_selection: str, scenario_id: str):
+    def __init__(self, scenario_id: str, experiment_name: str, model_selection: str):
         """Initialize experiment result class to hold multiple dataset results."""
         # Core configuration (same as in ExperimentRunner)
-        self.experiment_name = experiment_name
-        self.model_selection = model_selection
-        self.scenario_id = scenario_id
+        self.scenario_id = scenario_id  # e.g. "s04" or "s05"
+        self.experiment_name = experiment_name  # e.g. "s04_thread-degradation"
+        self.sampling_selection = experiment_name  # e.g. "binary_vs_ref"
+        self.model_selection = model_selection  # e.g. "paper" or "fast"
+        self.run_name = f"run_{self.scenario_id}_"
+
+        # Set initial experiment state
+        self.run_status: str = "initialized"
+        self.finished_datasets: str = "0/?"
+        self.trained_models: str = "0/?"
 
         # Initialize an empty list to hold all dataset results
         self.dataset_results: List[DatasetResult] = []
@@ -33,9 +40,9 @@ class ExperimentResult:
     def get_tags(self) -> Dict[str, Any]:
         """Get tags for MLflow experiment logging."""
         tags = {
-            "experiment_type": self.experiment_name,
-            "scenario_id": self.scenario_id,
-            "model_selection": self.model_selection,
+            "scenario_id": self.get_scenario_id(),
+            "model_selection": self.get_model_selection(),
+            "experiment_type": self.get_experiment_name(),
             "start_time": self.start_time,
             "status": "running",  # Will be updated by MLflowManager
         }
@@ -46,13 +53,16 @@ class ExperimentResult:
 
         return tags
 
+    def get_scenario_id(self) -> str:
+        """Get the scenario ID, e.g. 's04' or 's05'."""
+        return self.scenario_id
+
     def get_model_selection(self) -> str:
-        """Get the model selection strategy used."""
+        """Get the model selection strategy, e.g. 'fast' or 'paper'."""
         return self.model_selection
 
-    def get_scenario_id(self) -> str:
-        """Get the scenario ID."""
-        return self.scenario_id
+    def get_experiment_name(self) -> str:
+        """Get the name of the experiment (sampling strategy), e.g. 'binary_vs_ref'."""
 
     def finalize(self) -> None:
         """Mark experiment as complete."""
