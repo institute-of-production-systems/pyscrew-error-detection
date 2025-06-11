@@ -60,29 +60,9 @@ class MLflowManager:
 
     def start_experiment_run(self, experiment_result: ExperimentResult) -> None:
         """Initialize main experiment run with basic structure."""
-
-        scenario_selection = experiment_result.get_scenario_selection()
-        modeling_selection = experiment_result.get_modeling_selection()
-        sampling_selection = experiment_result.get_sampling_selection()
-        run_name = f"run_{scenario_selection}_{modeling_selection}"
-
-        # Initialize a result dict to hold all experiment tags (both static and dynamic)
-        experiment_tags_dict = {
-            "scenario_selection": scenario_selection,  # e.g. "s04", "s05", "s06"...
-            "modeling_selection": modeling_selection,  # e.g. "fast", "paper", "full", etc.
-            "experiment_type": experiment_result.sampling_selection,  # e.g. "binary_vs_ref"
-            "start_time": experiment_result.start_time,
-            "status": "initialized",
-            "completed_datasets": "0",
-            "completed_trainings": "0",
-        }
-
-        mlflow.start_run(run_name=run_name, nested=False)
-
-        # Set initial tags
-        mlflow.set_tags(experiment_tags_dict)
-
-        self.logger.info(f"Started experiment run: '{run_name}'")
+        mlflow.start_run(run_name=experiment_result.run_name, nested=False)
+        mlflow.set_tags(experiment_result.get_result_tags())
+        self.logger.info(f"Started experiment run: '{experiment_result.run_name}'")
 
     def start_dataset_run(self, dataset_result: DatasetResult) -> None:
         """Initialize dataset run with metadata."""
@@ -261,14 +241,14 @@ class MLflowManager:
         except Exception as e:
             self.logger.warning(f"Failed to update experiment progress: {str(e)}")
 
-    def finalize_experiment_run(self, experiment_result: ExperimentResult) -> None:
-        """Finalize experiment run with completion status."""
+    def end_experiment_run(self, experiment_result: ExperimentResult) -> None:
+        """End experiment run with completion status."""
         try:
             # Update final tags
             mlflow.set_tags(
                 {
                     "status": "completed",
-                    "finish_time": experiment_result.finish_time,
+                    "finish_time": experiment_result.end_time,
                     "total_datasets": str(len(experiment_result.dataset_results)),
                     "total_trained_models": str(
                         sum(
@@ -279,10 +259,10 @@ class MLflowManager:
                 }
             )
 
-            self.logger.info("Finalized experiment run")
+            self.logger.info("End experiment run")
 
         except Exception as e:
-            self.logger.warning(f"Failed to finalize experiment: {str(e)}")
+            self.logger.warning(f"Failed to end experiment: {str(e)}")
 
     # ================================
     # HELPER METHODS

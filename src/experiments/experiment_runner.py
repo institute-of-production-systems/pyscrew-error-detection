@@ -47,12 +47,13 @@ class ExperimentRunner:
         target_length: int = 2000,
         screw_positions: str = "left",
         cv_folds: int = 5,
+        stratify: bool = True,
         random_seed: int = 42,
         n_jobs: int = -1,
-        stratify: bool = True,
         log_level: str = "INFO",
         mlflow_port: int = 5000,
-        # Accept any additional config parameters (optional)
+        # Accept any additional config parameters
+        # TODO: holds a few not-implemented parameters at the moment
         **kwargs,
     ):
         """Initialize experiment runner with configuration parameters."""
@@ -75,11 +76,11 @@ class ExperimentRunner:
         # Initialize MLflow manager
         self.mlflow_manager = MLflowManager(port=mlflow_port)
 
-        # Initialize experiment result container with new naming
+        # Initialize experiment result class to track all results
         self.experiment_result = ExperimentResult(
+            scenario_selection=self.scenario_selection,
             sampling_selection=self.sampling_selection,
             modeling_selection=self.modeling_selection,
-            scenario_selection=self.scenario_selection,
         )
 
         # Instance variables for stateful design
@@ -194,9 +195,9 @@ class ExperimentRunner:
                 # UPDATE: Update experiment progress after each dataset
                 self.mlflow_manager.update_experiment_run(self.experiment_result)
 
-            # FINALIZE: Mark experiment as complete
-            self.experiment_result.finalize()
-            self.mlflow_manager.finalize_experiment_run(self.experiment_result)
+            # END: Mark experiment as complete
+            self.experiment_result.end()
+            self.mlflow_manager.end_experiment_run(self.experiment_result)
 
         finally:
             self.mlflow_manager.end_run()
@@ -349,27 +350,13 @@ class ExperimentRunner:
         finally:
             self.mlflow_manager.end_run()
 
-    def _log_fold_to_mlflow(self, fold_result: "FoldResult") -> None:
-        """Log fold result to MLflow if tracking is active."""
-        try:
-            # Only log if MLflow manager is available and there's an active run
-            if hasattr(self, "mlflow_manager") and self.mlflow_manager:
-                self.mlflow_manager.log_fold_result(fold_result)
-        except Exception as e:
-            self.logger.debug(f"Failed to log fold to MLflow: {str(e)}")
-            # Don't fail the fold if MLflow logging fails
-
     def _evaluate_experiment(self) -> None:
         """Generate experiment summary and log best performers."""
-        self.logger.info("Evaluating experiment results...")
-
-        # Finalize experiment timing
-        self.experiment_result.finalize()
-
         # Log experiment summary
+        self.logger.info("Evaluating experiment results...")
         self.logger.info(f"Experiment completed:")
         self.logger.info(
-            f"  Total datasets: {len(self.experiment_result.dataset_results)}"
+            f"Total datasets: {len(self.experiment_result.dataset_results)}"
         )
 
     def run(self) -> ExperimentResult:
