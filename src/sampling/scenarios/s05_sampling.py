@@ -7,7 +7,7 @@ from ..groups import load_groups
 
 
 def get_experiment_functions(
-    experiment_names: List[str],
+    sampling_selections: List[str],
 ) -> Dict[
     str, Callable[[Tuple[np.ndarray, np.ndarray, np.ndarray]], List[ExperimentDataset]]
 ]:
@@ -15,7 +15,7 @@ def get_experiment_functions(
     Returns dict of lazy functions for s05 experiments.
     """
     functions = {}
-    for exp_name in experiment_names:
+    for exp_name in sampling_selections:
         if exp_name == "multiclass_within_groups":
             functions[exp_name] = lambda processed_data: _get_multiclass_within_groups(
                 *processed_data
@@ -35,10 +35,10 @@ def get_experiment_functions(
     return functions
 
 
-def _placeholder_implementation(experiment_name: str) -> List[ExperimentDataset]:
+def _placeholder_implementation(sampling_selection: str) -> List[ExperimentDataset]:
     """Placeholder for binary experiments - replace with actual s05 sampling logic"""
     raise NotImplementedError(
-        f"s05 sampling for '{experiment_name}' not yet implemented. "
+        f"s05 sampling for '{sampling_selection}' not yet implemented. "
         f"Only multiclass experiments are currently supported."
     )
 
@@ -88,7 +88,7 @@ def _get_binary_for_extremes(torque_values, class_values, scenario_condition):
             name=f"{group_name}_extremes",
             x_values=filtered_torque_values,
             y_values=y_values,
-            experiment_name="binary_for_extremes",
+            sampling_selection="binary_for_extremes",
             class_count=2,
             class_names=class_names,
             normal_counts=normal_counts,
@@ -199,7 +199,7 @@ def _get_multiclass_within_groups(torque_values, class_values, scenario_conditio
             name=group_name,
             x_values=filtered_torque_values,
             y_values=filtered_class_values,
-            experiment_name="multiclass_within_groups",
+            sampling_selection="multiclass_within_groups",
             class_count=len(unique_class_names),
             class_names=class_names,
             normal_counts=normal_counts,
@@ -247,7 +247,7 @@ def _get_multiclass_with_all(torque_values, class_values, scenario_condition):
         name="all_errors",
         x_values=torque_values,
         y_values=y_values,
-        experiment_name="multiclass_with_all",
+        sampling_selection="multiclass_with_all",
         class_count=len(unique_class_names),
         class_names=class_names,
         normal_counts=normal_counts,

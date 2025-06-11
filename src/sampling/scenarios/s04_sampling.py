@@ -9,7 +9,7 @@ from ...experiments.experiment_dataset import ExperimentDataset
 
 
 def get_experiment_functions(
-    experiment_names: List[str],
+    sampling_selections: List[str],
 ) -> Dict[
     str, Callable[[Tuple[np.ndarray, np.ndarray, np.ndarray]], List[ExperimentDataset]]
 ]:
@@ -22,7 +22,7 @@ def get_experiment_functions(
     """
 
     functions = {}
-    for exp_name in experiment_names:
+    for exp_name in sampling_selections:
         if exp_name == "binary_vs_ref":
             functions[exp_name] = lambda processed_data: _get_binary_vs_ref_data(
                 *processed_data
@@ -79,7 +79,7 @@ def _get_binary_vs_ref_data(
             name=dataset_name,
             x_values=x_values,
             y_values=y_values,
-            experiment_name="binary_vs_ref",
+            sampling_selection="binary_vs_ref",
             class_count=2,  # Binary classification
             class_names={0: "normal", 1: "faulty"},
             normal_counts=normal_counts,
@@ -142,7 +142,7 @@ def _get_binary_vs_all_data(
             name=class_value,
             x_values=x_combined,
             y_values=y_values,
-            experiment_name="binary_vs_all",
+            sampling_selection="binary_vs_all",
             class_count=2,  # Binary classification
             class_names={0: "normal", 1: "faulty"},
             normal_counts=int(n_normal),
@@ -160,7 +160,7 @@ def _get_multiclass_with_groups(
     torque_values: np.ndarray,
     class_values: np.ndarray,
     scenario_condition: np.ndarray,
-    scenario_id: str,
+    scenario_selection: str,
 ) -> List[ExperimentDataset]:
     """Generate datasets for multi-class classification within error groups."""
     datasets = []
@@ -209,7 +209,7 @@ def _get_multiclass_with_groups(
             name=group_name,
             x_values=filtered_torque_values,
             y_values=y_values,
-            experiment_name="multiclass_with_groups",
+            sampling_selection="multiclass_with_groups",
             class_count=len(group_errors) + 1,  # Normal + all classes in group
             class_names=class_names,
             normal_counts=n_normal,
@@ -279,7 +279,7 @@ def _get_multiclass_with_all(
         name="all_errors",
         x_values=torque_values,
         y_values=y_values,
-        experiment_name="multiclass_with_all",
+        sampling_selection="multiclass_with_all",
         class_count=len(unique_classes) + 1,  # Normal + all error classes
         class_names=class_names,
         normal_counts=n_normal,

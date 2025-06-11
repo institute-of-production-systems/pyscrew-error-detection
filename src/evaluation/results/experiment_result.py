@@ -10,14 +10,16 @@ from .model_result import ModelResult
 class ExperimentResult:
     """Results from running a complete experiment across multiple datasets."""
 
-    def __init__(self, scenario_id: str, experiment_name: str, model_selection: str):
+    def __init__(
+        self, scenario_selection: str, sampling_selection: str, modeling_selection: str
+    ):
         """Initialize experiment result class to hold multiple dataset results."""
         # Core configuration (same as in ExperimentRunner)
-        self.scenario_id = scenario_id  # e.g. "s04" or "s05"
-        self.experiment_name = experiment_name  # e.g. "s04_thread-degradation"
-        self.sampling_selection = experiment_name  # e.g. "binary_vs_ref"
-        self.model_selection = model_selection  # e.g. "paper" or "fast"
-        self.run_name = f"run_{self.scenario_id}_"
+        self.scenario_selection = scenario_selection  # e.g. "s04" or "s05"
+        self.sampling_selection = sampling_selection  # e.g. "s04_thread-degradation"
+        self.sampling_selection = sampling_selection  # e.g. "binary_vs_ref"
+        self.modeling_selection = modeling_selection  # e.g. "paper" or "fast"
+        self.run_name = f"run_{self.scenario_selection}_"
 
         # Set initial experiment state
         self.run_status: str = "initialized"
@@ -40,9 +42,9 @@ class ExperimentResult:
     def get_tags(self) -> Dict[str, Any]:
         """Get tags for MLflow experiment logging."""
         tags = {
-            "scenario_id": self.get_scenario_id(),
-            "model_selection": self.get_model_selection(),
-            "experiment_type": self.get_experiment_name(),
+            "scenario_selection": self.get_scenario_selection(),
+            "modeling_selection": self.get_modeling_selection(),
+            "experiment_type": self.get_sampling_selection(),
             "start_time": self.start_time,
             "status": "running",  # Will be updated by MLflowManager
         }
@@ -53,15 +55,15 @@ class ExperimentResult:
 
         return tags
 
-    def get_scenario_id(self) -> str:
+    def get_scenario_selection(self) -> str:
         """Get the scenario ID, e.g. 's04' or 's05'."""
-        return self.scenario_id
+        return self.scenario_selection
 
-    def get_model_selection(self) -> str:
+    def get_modeling_selection(self) -> str:
         """Get the model selection strategy, e.g. 'fast' or 'paper'."""
-        return self.model_selection
+        return self.modeling_selection
 
-    def get_experiment_name(self) -> str:
+    def get_sampling_selection(self) -> str:
         """Get the name of the experiment (sampling strategy), e.g. 'binary_vs_ref'."""
 
     def finalize(self) -> None:
@@ -145,9 +147,9 @@ class ExperimentResult:
         )
 
         return {
-            "experiment_name": self.experiment_name,
-            "scenario_id": self.scenario_id,
-            "model_selection": self.model_selection,
+            "sampling_selection": self.sampling_selection,
+            "scenario_selection": self.scenario_selection,
+            "modeling_selection": self.modeling_selection,
             "start_time": self.start_time,
             "finish_time": self.finish_time,
             "total_datasets": total_datasets,
@@ -165,9 +167,9 @@ class ExperimentResult:
             for model_result in dataset_result.model_results:
                 # Base row information
                 row = {
-                    "experiment_name": self.experiment_name,
-                    "scenario_id": self.scenario_id,
-                    "model_selection": self.model_selection,
+                    "sampling_selection": self.sampling_selection,
+                    "scenario_selection": self.scenario_selection,
+                    "modeling_selection": self.modeling_selection,
                     "dataset": dataset_result.dataset_name,
                     "model": model_result.model_name,
                     "n_folds": len(model_result.fold_results),
@@ -186,4 +188,4 @@ class ExperimentResult:
 
     def __repr__(self) -> str:
         status = "completed" if self.finish_time else "running"
-        return f"ExperimentResult({self.experiment_name}, {len(self.dataset_results)} datasets, {status})"
+        return f"ExperimentResult({self.sampling_selection}, {len(self.dataset_results)} datasets, {status})"

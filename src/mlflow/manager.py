@@ -39,15 +39,15 @@ class MLflowManager:
         # Additional environment variables to suppress MLflow output
         os.environ["MLFLOW_TRACKING_SILENT"] = "true"
 
-    def setup_tracking(self, experiment_name: str) -> None:
+    def setup_tracking(self, sampling_selection: str) -> None:
         """Initialize MLflow tracking connection."""
         try:
             mlflow.set_tracking_uri(f"http://localhost:{self.port}")
-            mlflow.set_experiment(experiment_name)
+            mlflow.set_experiment(sampling_selection)
             # Disable auto-logging for explicit control
             mlflow.autolog(disable=True)
             mlflow.sklearn.autolog(disable=True)
-            self.logger.info(f"MLflow tracking initialized for '{experiment_name}'")
+            self.logger.info(f"MLflow tracking initialized for '{sampling_selection}'")
         except Exception as e:
             raise FatalExperimentError(
                 f"MLflow initialization failed: {str(e)}. "
@@ -61,16 +61,16 @@ class MLflowManager:
     def start_experiment_run(self, experiment_result: ExperimentResult) -> None:
         """Initialize main experiment run with basic structure."""
 
-        scenario_id = experiment_result.get_scenario_id()
-        model_selection = experiment_result.get_model_selection()
-        experiment_name = experiment_result.get_experiment_name()
-        run_name = f"run_{scenario_id}_{model_selection}"
+        scenario_selection = experiment_result.get_scenario_selection()
+        modeling_selection = experiment_result.get_modeling_selection()
+        sampling_selection = experiment_result.get_sampling_selection()
+        run_name = f"run_{scenario_selection}_{modeling_selection}"
 
         # Initialize a result dict to hold all experiment tags (both static and dynamic)
         experiment_tags_dict = {
-            "scenario_id": scenario_id,  # e.g. "s04", "s05", "s06"...
-            "model_selection": model_selection,  # e.g. "fast", "paper", "full", etc.
-            "experiment_type": experiment_result.experiment_name,  # e.g. "binary_vs_ref"
+            "scenario_selection": scenario_selection,  # e.g. "s04", "s05", "s06"...
+            "modeling_selection": modeling_selection,  # e.g. "fast", "paper", "full", etc.
+            "experiment_type": experiment_result.sampling_selection,  # e.g. "binary_vs_ref"
             "start_time": experiment_result.start_time,
             "status": "initialized",
             "completed_datasets": "0",

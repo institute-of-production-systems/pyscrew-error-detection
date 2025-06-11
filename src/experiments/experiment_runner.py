@@ -40,9 +40,10 @@ class ExperimentRunner:
 
     def __init__(
         self,
-        experiment_name: str,
-        model_selection: str,
-        scenario_id: str = "s04",
+        scenario_selection: str,
+        sampling_selection: str,
+        modeling_selection: str,
+        # Technical configuration from config.yml (unpacked)
         target_length: int = 2000,
         screw_positions: str = "left",
         cv_folds: int = 5,
@@ -50,18 +51,19 @@ class ExperimentRunner:
         n_jobs: int = -1,
         stratify: bool = True,
         log_level: str = "INFO",
+        mlflow_port: int = 5000,
+        # Accept any additional config parameters (optional)
+        **kwargs,
     ):
         """Initialize experiment runner with configuration parameters."""
-        # Core configuration
-        self.experiment_name = experiment_name
-        self.model_selection = model_selection
-        self.scenario_id = scenario_id
+        # Core experimental design choices (the crucial trio)
+        self.scenario_selection = scenario_selection  # e.g. "s06"
+        self.sampling_selection = sampling_selection  # e.g. "binary_for_extremes"
+        self.modeling_selection = modeling_selection  # e.g. "paper"
 
-        # Data processing parameters
+        # Technical/modeling parameters (from config.yml)
         self.target_length = target_length
         self.screw_positions = screw_positions
-
-        # Model evaluation parameters
         self.cv_folds = cv_folds
         self.random_seed = random_seed
         self.n_jobs = n_jobs
@@ -71,13 +73,13 @@ class ExperimentRunner:
         self.logger = get_logger(__name__, log_level)
 
         # Initialize MLflow manager
-        self.mlflow_manager = MLflowManager(port=self._MLFLOW_PORT)
+        self.mlflow_manager = MLflowManager(port=mlflow_port)
 
-        # Initialize experiment result container
+        # Initialize experiment result container with new naming
         self.experiment_result = ExperimentResult(
-            experiment_name=self.experiment_name,
-            model_selection=self.model_selection,
-            scenario_id=self.scenario_id,
+            sampling_selection=self.sampling_selection,
+            modeling_selection=self.modeling_selection,
+            scenario_selection=self.scenario_selection,
         )
 
         # Instance variables for stateful design
@@ -103,9 +105,9 @@ class ExperimentRunner:
 
     def _log_initialization(self) -> None:
         """Log experiment configuration for debugging."""
-        self.logger.info(f"Initializing {self.experiment_name} experiment")
+        self.logger.info(f"Initializing {self.sampling_selection} experiment")
         self.logger.info(
-            f"  Dataset: {self.scenario_id}, Models: {self.model_selection}"
+            f"  Dataset: {self.scenario_selection}, Models: {self.modeling_selection}"
         )
         self.logger.info(
             f"  CV folds: {self.cv_folds}, Random seed: {self.random_seed}"
@@ -120,7 +122,7 @@ class ExperimentRunner:
         self._ensure_mlflow_server()
 
         # Setup MLflow tracking
-        self.mlflow_manager.setup_tracking(self.experiment_name)
+        self.mlflow_manager.setup_tracking(self.sampling_selection)
 
     def _setup_datasets_and_models(self) -> None:
         """Load data, apply preprocessing, and initialize models."""
@@ -128,24 +130,25 @@ class ExperimentRunner:
             self.logger.info("Loading and preprocessing data...")
 
             # Load and preprocess time series data using PyScrew
-            # https://github.com/nikolaiwest/pyscrew
             raw_data = load_data(
-                scenario_id=self.scenario_id,
+                scenario_selection=self.scenario_selection,
                 target_length=self.target_length,
                 screw_positions=self.screw_positions,
             )
             processed_data = process_data(raw_data, target_length=200)
 
-            # Generate datasets based on experiment type (binary/multiclass)
+            # Generate datasets based on sampling selection
             self.datasets = sample_datasets(
                 processed_data=processed_data,
-                experiment_name=self.experiment_name,
-                scenario_id=self.scenario_id,
+                sampling_selection=self.sampling_selection,
+                scenario_selection=self.scenario_selection,
             )
 
             # Initialize ML models with experiment configuration
             self.models = get_classifier_dict(
-                self.model_selection, self.random_seed, self.n_jobs
+                self.modeling_selection,
+                self.random_seed,
+                self.n_jobs,
             )
 
             self.logger.info(

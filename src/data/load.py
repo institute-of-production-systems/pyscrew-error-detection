@@ -5,7 +5,7 @@ import pyscrew
 
 
 def load_data(
-    scenario_id: str = "s04",
+    scenario_selection: str = "s04",
     target_length: int = 2000,
     screw_positions: str = "left",
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -14,7 +14,7 @@ def load_data(
 
     Parameters:
     -----------
-    scenario_id : str, optional
+    scenario_selection : str, optional
         Dataset ID to load (default: "s04")
     target_length : int, optional
         Length of time series (default: 2000)
@@ -27,7 +27,7 @@ def load_data(
     """
     # Load data using pyscrew
     data = pyscrew.get_data(
-        scenario_id,
+        scenario_selection,
         screw_positions=screw_positions,
         target_length=target_length,
     )

@@ -34,7 +34,7 @@ def plot_classification_results(csv_path, output_dir=None, figsize=(12, 10), dpi
 
         # Extract experiment name from the path for figure naming
         csv_filename = os.path.basename(csv_path)
-        experiment_name = os.path.splitext(csv_filename)[0]
+        sampling_selection = os.path.splitext(csv_filename)[0]
 
     # Read the CSV file
     df = pd.read_csv(csv_path)
@@ -114,7 +114,7 @@ def plot_classification_results(csv_path, output_dir=None, figsize=(12, 10), dpi
     figures["accuracy_by_model"] = fig1
 
     if output_dir:
-        fig1.savefig(Path(output_dir) / f"{experiment_name}_accuracy_by_model.png")
+        fig1.savefig(Path(output_dir) / f"{sampling_selection}_accuracy_by_model.png")
 
     # 2. Plot win count by model
     fig2, ax2 = plt.subplots(figsize=figsize, dpi=dpi)
@@ -144,7 +144,7 @@ def plot_classification_results(csv_path, output_dir=None, figsize=(12, 10), dpi
     figures["win_count_by_model"] = fig2
 
     if output_dir:
-        fig2.savefig(Path(output_dir) / f"{experiment_name}_win_count_by_model.png")
+        fig2.savefig(Path(output_dir) / f"{sampling_selection}_win_count_by_model.png")
 
     # 3. Plot performance metrics comparison
     fig3, ax3 = plt.subplots(figsize=figsize, dpi=dpi)
@@ -168,7 +168,7 @@ def plot_classification_results(csv_path, output_dir=None, figsize=(12, 10), dpi
     figures["metrics_by_model"] = fig3
 
     if output_dir:
-        fig3.savefig(Path(output_dir) / f"{experiment_name}_metrics_by_model.png")
+        fig3.savefig(Path(output_dir) / f"{sampling_selection}_metrics_by_model.png")
 
     # 4. Heatmap of model performance by class category
     # Pivot data for heatmap
@@ -186,7 +186,7 @@ def plot_classification_results(csv_path, output_dir=None, figsize=(12, 10), dpi
     figures["category_heatmap"] = fig4
 
     if output_dir:
-        fig4.savefig(Path(output_dir) / f"{experiment_name}_category_heatmap.png")
+        fig4.savefig(Path(output_dir) / f"{sampling_selection}_category_heatmap.png")
 
     # 5. Best model performance by class
     fig5, ax5 = plt.subplots(figsize=(figsize[0], figsize[1] * 1.5), dpi=dpi)
@@ -219,7 +219,7 @@ def plot_classification_results(csv_path, output_dir=None, figsize=(12, 10), dpi
     figures["best_model_by_class"] = fig5
 
     if output_dir:
-        fig5.savefig(Path(output_dir) / f"{experiment_name}_best_model_by_class.png")
+        fig5.savefig(Path(output_dir) / f"{sampling_selection}_best_model_by_class.png")
 
     # 6. Radar chart of model performance
     fig6, ax6 = plt.subplots(figsize=figsize, subplot_kw=dict(polar=True), dpi=dpi)
@@ -252,7 +252,7 @@ def plot_classification_results(csv_path, output_dir=None, figsize=(12, 10), dpi
     figures["radar_chart"] = fig6
 
     if output_dir:
-        fig6.savefig(Path(output_dir) / f"{experiment_name}_radar_chart.png")
+        fig6.savefig(Path(output_dir) / f"{sampling_selection}_radar_chart.png")
 
     # 7. Box plot of accuracy distribution by model
     fig7, ax7 = plt.subplots(figsize=figsize, dpi=dpi)
@@ -282,7 +282,9 @@ def plot_classification_results(csv_path, output_dir=None, figsize=(12, 10), dpi
     figures["accuracy_distribution"] = fig7
 
     if output_dir:
-        fig7.savefig(Path(output_dir) / f"{experiment_name}_accuracy_distribution.png")
+        fig7.savefig(
+            Path(output_dir) / f"{sampling_selection}_accuracy_distribution.png"
+        )
 
     # 8. Average performance by class
     avg_by_class = df.groupby("class")["accuracy"].mean().reset_index()
@@ -309,15 +311,15 @@ def plot_classification_results(csv_path, output_dir=None, figsize=(12, 10), dpi
     figures["avg_by_class"] = fig8
 
     if output_dir:
-        fig8.savefig(Path(output_dir) / f"{experiment_name}_avg_by_class.png")
+        fig8.savefig(Path(output_dir) / f"{sampling_selection}_avg_by_class.png")
 
     # Save a summary text file if output_dir is specified
     if output_dir:
         # Save a summary text file
-        summary_file = Path(output_dir) / f"{experiment_name}_summary.txt"
+        summary_file = Path(output_dir) / f"{sampling_selection}_summary.txt"
         with open(summary_file, "w") as f:
             f.write(
-                f"Model performance summary for {experiment_name} (sorted by accuracy):\n"
+                f"Model performance summary for {sampling_selection} (sorted by accuracy):\n"
             )
             f.write(
                 model_summary[["model", "accuracy", "f1-score"]].to_string(index=False)

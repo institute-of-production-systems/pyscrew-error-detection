@@ -13,7 +13,7 @@ class ExperimentDataset:
     x_values: np.ndarray
     y_values: np.ndarray
 
-    experiment_name: str
+    sampling_selection: str
     class_count: int
     class_names: dict[int:str]
     normal_counts: int
