@@ -57,7 +57,7 @@ class ExperimentRunner:
         **kwargs,
     ):
         """Initialize experiment runner with configuration parameters."""
-        # Core experimental design choices (the crucial trio)
+        # Core experimental design choices (the 'crucial trio')
         self.scenario_selection = scenario_selection  # e.g. "s06"
         self.sampling_selection = sampling_selection  # e.g. "binary_for_extremes"
         self.modeling_selection = modeling_selection  # e.g. "paper"
@@ -123,7 +123,7 @@ class ExperimentRunner:
         self._ensure_mlflow_server()
 
         # Setup MLflow tracking
-        self.mlflow_manager.setup_tracking(self.sampling_selection)
+        self.mlflow_manager.setup_tracking(self.scenario_selection)
 
     def _setup_datasets_and_models(self) -> None:
         """Load data, apply preprocessing, and initialize models."""
@@ -205,8 +205,11 @@ class ExperimentRunner:
     def _run_dataset(self, experiment_dataset: ExperimentDataset) -> DatasetResult:
         """Process all models on a single dataset."""
 
-        # Initialize dataset result
+        # Initialize dataset result with inherited trio
         dataset_result = DatasetResult(
+            scenario_selection=self.scenario_selection,
+            sampling_selection=self.sampling_selection,
+            modeling_selection=self.modeling_selection,
             dataset_name=experiment_dataset.name,
             dataset_tags={
                 key: value

@@ -66,24 +66,9 @@ class MLflowManager:
 
     def start_dataset_run(self, dataset_result: DatasetResult) -> None:
         """Initialize dataset run with metadata."""
-        run_name = dataset_result.dataset_name
-        dataset_tags = dataset_result.get_tags()
-
-        mlflow.start_run(run_name=run_name, nested=True)
-        mlflow.set_tags(dataset_tags)
-
-        # Initialize placeholder metrics (will be updated after models complete)
-        mlflow.log_metrics(
-            {
-                "best_f1_score": 0.0,
-                "best_accuracy": 0.0,
-                "avg_f1_score": 0.0,
-                "avg_accuracy": 0.0,
-                "models_completed": 0,
-            }
-        )
-
-        self.logger.debug(f"Started dataset run: {run_name}")
+        mlflow.start_run(run_name=dataset_result.name, nested=True)
+        mlflow.set_tags(dataset_result.get_result_tags())
+        self.logger.info(f"Started dataset run: {dataset_result.name}")
 
     def start_model_run(self, model_result: ModelResult) -> None:
         """Initialize model run with placeholder metrics."""
