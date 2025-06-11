@@ -1,0 +1,75 @@
+# =============================================================================
+# Technical Configuration for PyScrew Error Detection Experiments
+# =============================================================================
+# This file contains all technical/modeling parameters that remain static
+# across different experimental designs. The three core experimental choices
+# (scenario/sampling/modeling selection) are handled in main.py and CLI.
+
+# -----------------------------------------------------------------------------
+# DATA PROCESSING CONFIGURATION
+# -----------------------------------------------------------------------------
+
+# Length to reduce time series to using Piecewise Aggregate Approximation (PAA)
+# Original PyScrew data is ~2000 time points, reduced for computational efficiency
+target_length: 200
+
+# Which screw position data to use from PyScrew dataset
+# Options: "left", "right", "both" (though PyScrew typically uses "left")
+screw_positions: "left"
+
+# -----------------------------------------------------------------------------
+# CROSS-VALIDATION CONFIGURATION  
+# -----------------------------------------------------------------------------
+
+# Number of cross-validation folds for model evaluation
+# 5 is standard, 10 for more robust estimates (but slower)
+cv_folds: 5
+
+# Whether to use stratified CV (maintains class distribution across folds)
+# Recommended: true for imbalanced datasets like error detection
+stratify: true
+
+# Random seed for reproducible train/test splits and model initialization
+# Change this to get different random splits while keeping everything else constant
+random_seed: 42
+
+# -----------------------------------------------------------------------------
+# COMPUTATIONAL CONFIGURATION
+# -----------------------------------------------------------------------------
+
+# Number of parallel jobs for model training
+# -1 = use all available CPU cores, 1 = single-threaded, N = use N cores
+n_jobs: -1
+
+# -----------------------------------------------------------------------------
+# LOGGING CONFIGURATION
+# -----------------------------------------------------------------------------
+
+# Base logging level for console output
+# Options: "DEBUG", "INFO", "WARNING", "ERROR"
+# Note: CLI --verbose/--quiet flags can override this
+log_level: "INFO"
+
+# -----------------------------------------------------------------------------
+# MLFLOW EXPERIMENT TRACKING CONFIGURATION
+# -----------------------------------------------------------------------------
+
+# Port for MLflow tracking server
+# Default MLflow port is 5000, change if you have conflicts
+mlflow_port: 5000
+
+# Whether to automatically launch MLflow server if not running
+# Set to false if you prefer to manage MLflow server manually
+mlflow_auto_launch: true
+
+# -----------------------------------------------------------------------------
+# ADVANCED/EXPERIMENTAL CONFIGURATION
+# -----------------------------------------------------------------------------
+
+# Whether to save detailed fold-level artifacts (confusion matrices, etc.)
+# Set to false to reduce storage overhead for large experiments
+save_fold_artifacts: true
+
+# Timeout for individual model training (in seconds)
+# Set to 0 for no timeout, useful for preventing stuck models
+model_timeout: 0
