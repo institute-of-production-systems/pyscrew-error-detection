@@ -68,7 +68,7 @@ def sample_datasets(
             scenario_selection, sampling_selection
         )
         return sampling_function(
-            processed_data, scenario_selection, sampling_selection, modeling_selection
+            *processed_data, scenario_selection, sampling_selection, modeling_selection
         )
     except KeyError:
         raise SamplingError(

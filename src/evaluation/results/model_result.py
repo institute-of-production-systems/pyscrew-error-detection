@@ -1,6 +1,8 @@
-from typing import Dict, List, Any
+from typing import Any, Dict, List
 
 import numpy as np
+
+from src.experiments.experiment_dataset import ExperimentDataset
 
 from .base_result import BaseResult
 from .fold_result import FoldResult
@@ -14,29 +16,23 @@ class ModelResult(BaseResult):
     from BaseResult for MLflow tagging and cross-experiment queries.
     """
 
-    def __init__(
-        self,
-        scenario_selection: str,
-        sampling_selection: str,
-        modeling_selection: str,
-        dataset_name: str,
-        dataset_tags: Dict[str, Any],
-        model_name,
-    ) -> None:
+    def __init__(self, experiment_dataset: ExperimentDataset, model_name: str) -> None:
         """Initialize model result to hold multiple fold results."""
 
         # Call parent constructor with the core configuration
-        super().__init__(scenario_selection, sampling_selection, modeling_selection)
-
-        # Set names for model and dataset
+        super().__init__(
+            experiment_dataset.scenario_selection,
+            experiment_dataset.sampling_selection,
+            experiment_dataset.modeling_selection,
+        )
         self.name = model_name
-        self.dataset_name = dataset_name
+        self.tags = {}
 
         # Initialize an empty list to hold all fold results
         self.fold_results: List[FoldResult] = []
 
         # Initialize empty metrics dictionaries (will be computed when folds are added)
-        self.mean_metrics = {}
+        self.avg_metrics = {}
         self.std_metrics = {}
         self.min_metrics = {}
         self.max_metrics = {}
@@ -57,7 +53,7 @@ class ModelResult(BaseResult):
     def _compute_aggregated_metrics(self):
         """Compute mean, std, min, max across all folds."""
         if not self.fold_results:
-            self.mean_metrics = {}
+            self.avg_metrics = {}
             self.std_metrics = {}
             self.min_metrics = {}
             self.max_metrics = {}
@@ -66,14 +62,14 @@ class ModelResult(BaseResult):
         # Get all metric names from first fold
         metric_names = self.fold_results[0].metrics.keys()
 
-        self.mean_metrics = {}
+        self.avg_metrics = {}
         self.std_metrics = {}
         self.min_metrics = {}
         self.max_metrics = {}
 
         for metric_name in metric_names:
             values = [fold.metrics.get(metric_name, 0) for fold in self.fold_results]
-            self.mean_metrics[metric_name] = np.mean(values)
+            self.avg_metrics[metric_name] = np.mean(values)
             self.std_metrics[metric_name] = np.std(values)
             self.min_metrics[metric_name] = np.min(values)
             self.max_metrics[metric_name] = np.max(values)
@@ -95,19 +91,19 @@ class ModelResult(BaseResult):
     def get_metric_summary(self, metric_name: str) -> Dict[str, float]:
         """Get statistical summary for a specific metric."""
         return {
-            "mean": self.mean_metrics.get(metric_name, 0.0),
+            "avg": self.avg_metrics.get(metric_name, 0.0),
             "std": self.std_metrics.get(metric_name, 0.0),
             "min": self.min_metrics.get(metric_name, 0.0),
             "max": self.max_metrics.get(metric_name, 0.0),
             "cv": self.std_metrics.get(metric_name, 0.0)
             / max(
-                self.mean_metrics.get(metric_name, 1.0), 1e-10
+                self.avg_metrics.get(metric_name, 1.0), 1e-10
             ),  # Coefficient of variation
         }
 
     def get_mean_metric(self, metric_name: str) -> float:
         """Get mean value for a specific metric."""
-        return self.mean_metrics.get(metric_name, 0.0)
+        return self.avg_metrics.get(metric_name, 0.0)
 
     def get_fold_stability(self, metric_name: str) -> str:
         """
@@ -120,11 +116,11 @@ class ModelResult(BaseResult):
         if not self.fold_results or metric_name not in self.std_metrics:
             return "unknown"
 
-        mean_val = self.mean_metrics.get(metric_name, 0.0)
+        avg_val = self.avg_metrics.get(metric_name, 0.0)
         std_val = self.std_metrics.get(metric_name, 0.0)
 
         # Use coefficient of variation to assess stability
-        cv = std_val / max(mean_val, 1e-10)
+        cv = std_val / max(avg_val, 1e-10)
 
         if cv < 0.1:
             return "stable"
@@ -138,7 +134,7 @@ class ModelResult(BaseResult):
         metrics = {}
 
         # Add mean metrics (primary metrics)
-        for metric_name, value in self.mean_metrics.items():
+        for metric_name, value in self.avg_metrics.items():
             if isinstance(value, (int, float)) and not np.isnan(value):
                 metrics[metric_name] = float(value)
 
@@ -174,4 +170,4 @@ class ModelResult(BaseResult):
     def __repr__(self) -> str:
         f1 = self.get_mean_metric("f1_score")
         f1_std = self.std_metrics.get("f1_score", 0)
-        return f"ModelResult({self.model_name}, f1={f1:.2f}±{f1_std:.2f}, {len(self.fold_results)} folds)"
+        return f"ModelResult({self.name}, f1={f1:.2f}±{f1_std:.2f}, {len(self.fold_results)} folds)"

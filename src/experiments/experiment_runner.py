@@ -77,8 +77,8 @@ class ExperimentRunner:
         self.mlflow_manager = MLflowManager(port=mlflow_port)
 
         # Instance variables for stateful design
+        self.experiment_result: ExperimentResult = None
         self.datasets: List[ExperimentDataset] = []
-        self.results: ExperimentResult = None
         self.models: Dict[str, Any] = {}
 
         self._log_initialization()
@@ -119,8 +119,16 @@ class ExperimentRunner:
         # Setup MLflow tracking
         self.mlflow_manager.setup_tracking(self.scenario_selection)
 
-    def _setup_datasets_and_models(self) -> None:
-        """Load data, apply preprocessing, and initialize models."""
+    def get_all_selections(self) -> Tuple[str, str, str]:
+        """Helper function to return a tuple of the core trio."""
+        return (
+            self.scenario_selection,
+            self.sampling_selection,
+            self.modeling_selection,
+        )
+
+    def get_all_datasets(self) -> None:
+        """Load data and apply preprocessing."""
         try:
             self.logger.info("Loading and preprocessing data...")
 
@@ -130,28 +138,21 @@ class ExperimentRunner:
                 target_length=self.target_length,
                 screw_positions=self.screw_positions,
             )
-            processed_data = process_data(raw_data, target_length=200)
-
             # Generate datasets based on sampling selection
-            self.datasets = sample_datasets(
-                processed_data=processed_data,
-                sampling_selection=self.sampling_selection,
-                scenario_selection=self.scenario_selection,
-            )
-
-            # Initialize ML models with experiment configuration
-            self.models = get_classifier_dict(
-                self.modeling_selection,
-                self.random_seed,
-                self.n_jobs,
-            )
-
-            self.logger.info(
-                f"Prepared {len(self.datasets)} datasets and {len(self.models)} models"
-            )
+            processed_data = process_data(raw_data, target_length=200)
+            all_selections = self.get_all_selections()
+            return sample_datasets(processed_data, *all_selections)
 
         except Exception as e:
             raise DatasetPreparationError(f"Failed to prepare data: {str(e)}") from e
+
+    def get_all_models(self) -> None:
+        """Initialize ML models with experiment configuration."""
+        return get_classifier_dict(
+            self.modeling_selection,
+            self.random_seed,
+            self.n_jobs,
+        )
 
     def _update_split_method(self, dataset: ExperimentDataset):
         """Set up cross-validation with appropriate split strategy."""
@@ -175,11 +176,7 @@ class ExperimentRunner:
         """Execute main experiment loop with clean start/update MLflow pattern."""
 
         # Initialize experiment result class to track all results
-        self.experiment_result = ExperimentResult(
-            scenario_selection=self.scenario_selection,
-            sampling_selection=self.sampling_selection,
-            modeling_selection=self.modeling_selection,
-        )
+        self.experiment_result = ExperimentResult(*self.get_all_selections())
 
         # START: Initialize main experiment run
         self.mlflow_manager.start_experiment_run(self.experiment_result)
@@ -210,21 +207,8 @@ class ExperimentRunner:
         the Dataset Result class for each model, returns the Dataset Result.
         """
 
-        # Create a tag dict from the experiment dataset for mlflow logging
-        dataset_tags = {
-            key: value
-            for key, value in experiment_dataset.to_dict().items()
-            if key not in ["name", "x_values", "y_values"]
-        }
-
         # Initialize dataset result with inherited trio
-        dataset_result = DatasetResult(
-            scenario_selection=self.scenario_selection,
-            sampling_selection=self.sampling_selection,
-            modeling_selection=self.modeling_selection,
-            dataset_name=experiment_dataset.name,
-            dataset_tags=dataset_tags,
-        )
+        dataset_result = DatasetResult(experiment_dataset)
 
         # START: Initialize dataset run
         self.mlflow_manager.start_dataset_run(dataset_result)
@@ -244,9 +228,7 @@ class ExperimentRunner:
 
                     # Log success
                     f1_score = model_result.get_mean_metric("f1_score")
-                    self.logger.info(
-                        f"    {model_name}: f1_score (avg.) = {f1_score:.3f}"
-                    )
+                    self.logger.info(f"{model_name}: f1_score (avg.) = {f1_score:.3f}")
 
                 except ModelEvaluationError as e:
                     self.logger.warning(f"    {model_name}: FAILED - {str(e)}")
@@ -266,14 +248,7 @@ class ExperimentRunner:
         """Process all folds of a model for a given dataset."""
 
         # Initialize model result with inherited trio
-        model_result = ModelResult(
-            scenario_selection=self.scenario_selection,
-            sampling_selection=self.sampling_selection,
-            modeling_selection=self.modeling_selection,
-            dataset_name=experiment_dataset.name,
-            model_name=model_name,
-            dataset_name=experiment_dataset.name,
-        )
+        model_result = ModelResult(experiment_dataset, model_name)
 
         # START: Initialize model run
         self.mlflow_manager.start_model_run(model_result)
@@ -384,7 +359,9 @@ class ExperimentRunner:
         Experiment -> Dataset -> Model -> Fold
         """
         try:
-            self._setup_datasets_and_models()
+            self.datasets = self.get_all_datasets()
+            self.models = self.get_all_models()
+
             self._setup_experiment_tracking()
 
             # Execute experiment with real-time logging

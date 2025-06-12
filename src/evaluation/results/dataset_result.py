@@ -1,5 +1,7 @@
 from typing import Any, Dict, List
 
+from src.experiments.experiment_dataset import ExperimentDataset
+
 from .base_result import BaseResult
 from .model_result import ModelResult
 
@@ -12,14 +14,7 @@ class DatasetResult(BaseResult):
     from BaseResult for MLflow tagging and cross-experiment queries.
     """
 
-    def __init__(
-        self,
-        scenario_selection: str,
-        sampling_selection: str,
-        modeling_selection: str,
-        dataset_name: str,
-        dataset_tags: Dict[str, Any],
-    ) -> None:
+    def __init__(self, experiment_dataset: ExperimentDataset) -> None:
         """
         Initialize dataset result with core configuration.
 
@@ -37,10 +32,14 @@ class DatasetResult(BaseResult):
             Dataset-specific metadata tags
         """
         # Call parent constructor with the core configuration
-        super().__init__(scenario_selection, sampling_selection, modeling_selection)
-        # Dataset-specific properties
-        self.name = dataset_name
-        self.tags = dataset_tags
+        super().__init__(
+            experiment_dataset.scenario_selection,
+            experiment_dataset.sampling_selection,
+            experiment_dataset.modeling_selection,
+        )
+        self.name = experiment_dataset.name
+        self.tags = experiment_dataset.get_tags()
+
         # Initialize an empty list to hold all model results
         self.model_results: List[ModelResult] = []
 

@@ -28,3 +28,11 @@ class ExperimentDataset:
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary, including None values."""
         return asdict(self)
+
+    def get_tags(self) -> Dict[str, Any]:
+        """Returns a dict of dataset tags for logging."""
+        return {
+            key: value
+            for key, value in self.to_dict().items()
+            if key not in ["name", "x_values", "y_values"]
+        }

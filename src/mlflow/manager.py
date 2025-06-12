@@ -72,30 +72,10 @@ class MLflowManager:
 
     def start_model_run(self, model_result: ModelResult) -> None:
         """Initialize model run with placeholder metrics."""
-        run_name = model_result.model_name
-
-        mlflow.start_run(run_name=run_name, nested=True)
-
-        # Initialize with placeholder metrics (will be updated after each fold)
-        mlflow.log_metrics(
-            {
-                "f1_score": 0.0,
-                "accuracy": 0.0,
-                "precision": 0.0,
-                "recall": 0.0,
-                "folds_completed": 0,
-            }
-        )
-
-        # Log model metadata
-        mlflow.log_params(
-            {
-                "model_name": model_result.model_name,
-                "dataset_name": model_result.dataset_name,
-            }
-        )
-
-        self.logger.debug(f"Started model run: {run_name}")
+        mlflow.start_run(run_name=model_result.name, nested=True)
+        mlflow.set_tags({})
+        mlflow.log_metrics({})
+        self.logger.debug(f"Started model run: {model_result.name}")
 
     def start_fold_run(self, fold_index: int) -> None:
         """Initialize fold run structure."""
@@ -155,9 +135,7 @@ class MLflowManager:
             self._log_fold_stability_analysis(model_result)
 
         except Exception as e:
-            self.logger.warning(
-                f"Failed to update model {model_result.model_name}: {str(e)}"
-            )
+            self.logger.warning(f"Failed to update model {model_result.name}: {str(e)}")
 
     def update_dataset_run(self, dataset_result: DatasetResult) -> None:
         """Update dataset run with aggregates across all models."""
@@ -273,7 +251,7 @@ class MLflowManager:
 
     def _log_confusion_matrix(self, model_result: ModelResult) -> None:
         """Log aggregated confusion matrix as MLflow artifact."""
-        cm_path = f"{model_result.model_name}_aggregated_cm.csv"
+        cm_path = f"{model_result.name}_aggregated_cm.csv"
         try:
             pd.DataFrame(model_result.confusion_matrix).to_csv(cm_path, index=False)
             mlflow.log_artifact(cm_path)
