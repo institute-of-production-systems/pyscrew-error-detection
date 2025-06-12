@@ -15,7 +15,10 @@ class ExperimentResult(BaseResult):
     """
 
     def __init__(
-        self, scenario_selection: str, sampling_selection: str, modeling_selection: str
+        self,
+        scenario_selection: str,
+        sampling_selection: str,
+        modeling_selection: str,
     ) -> None:
         """
         Initialize experiment result with core configuration.

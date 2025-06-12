@@ -1,52 +1,19 @@
-from typing import Callable, Dict, List, Tuple
+from typing import List
 
 import numpy as np
 
+from src.experiments.experiment_dataset import ExperimentDataset
 from src.sampling.groups import load_groups
 from src.utils.exceptions import SamplingError
 
-from ...experiments.experiment_dataset import ExperimentDataset
 
-
-def get_experiment_functions(
-    sampling_selections: List[str],
-) -> Dict[
-    str, Callable[[Tuple[np.ndarray, np.ndarray, np.ndarray]], List[ExperimentDataset]]
-]:
-    """
-    Returns dict of lazy functions for s04 experiments.
-
-    TODO: Prepared to be called with a list, even though the experiment runner
-    currently just calls it with a single experiment name. Might expand or simplify
-    this in the future.
-    """
-
-    functions = {}
-    for exp_name in sampling_selections:
-        if exp_name == "binary_vs_ref":
-            functions[exp_name] = lambda processed_data: _get_binary_vs_ref_data(
-                *processed_data
-            )
-        elif exp_name == "binary_vs_all":
-            functions[exp_name] = lambda processed_data: _get_binary_vs_all_data(
-                *processed_data
-            )
-        elif exp_name == "multiclass_with_groups":
-            functions[exp_name] = lambda processed_data: _get_multiclass_with_groups(
-                *processed_data, "s04"
-            )
-        elif exp_name == "multiclass_with_all":
-            functions[exp_name] = lambda processed_data: _get_multiclass_with_all(
-                *processed_data
-            )
-        else:
-            raise ValueError(f"Unknown experiment type: {exp_name}")
-
-    return functions
-
-
-def _get_binary_vs_ref_data(
-    torque_values: np.ndarray, class_values: np.ndarray, scenario_condition: np.ndarray
+def sample_s04_binary_vs_ref(
+    torque_values: np.ndarray,
+    class_values: np.ndarray,
+    scenario_condition: np.ndarray,
+    scenario_selection: str,
+    sampling_selection: str,
+    modeling_selection: str,
 ) -> List[ExperimentDataset]:
     """Generate datasets for binary classification of errors vs reference in one class."""
 
@@ -79,7 +46,9 @@ def _get_binary_vs_ref_data(
             name=dataset_name,
             x_values=x_values,
             y_values=y_values,
-            sampling_selection="binary_vs_ref",
+            scenario_selection=scenario_selection,
+            sampling_selection=sampling_selection,
+            modeling_selection=modeling_selection,
             class_count=2,  # Binary classification
             class_names={0: "normal", 1: "faulty"},
             normal_counts=normal_counts,
@@ -99,8 +68,13 @@ def _get_binary_vs_ref_data(
     return datasets
 
 
-def _get_binary_vs_all_data(
-    torque_values: np.ndarray, class_values: np.ndarray, scenario_condition: np.ndarray
+def sample_s04_binary_vs_all(
+    torque_values: np.ndarray,
+    class_values: np.ndarray,
+    scenario_condition: np.ndarray,
+    scenario_selection: str,
+    sampling_selection: str,
+    modeling_selection: str,
 ) -> List[ExperimentDataset]:
     """Generate datasets for binary classification comparing each class's faulty samples vs ALL normal samples."""
     datasets = []
@@ -142,7 +116,9 @@ def _get_binary_vs_all_data(
             name=class_value,
             x_values=x_combined,
             y_values=y_values,
-            sampling_selection="binary_vs_all",
+            scenario_selection=scenario_selection,
+            sampling_selection=sampling_selection,
+            modeling_selection=modeling_selection,
             class_count=2,  # Binary classification
             class_names={0: "normal", 1: "faulty"},
             normal_counts=int(n_normal),
@@ -156,17 +132,21 @@ def _get_binary_vs_all_data(
     return datasets
 
 
-def _get_multiclass_with_groups(
+def sample_s04_multiclass_with_groups(
     torque_values: np.ndarray,
     class_values: np.ndarray,
     scenario_condition: np.ndarray,
     scenario_selection: str,
+    sampling_selection: str,
+    modeling_selection: str,
 ) -> List[ExperimentDataset]:
     """Generate datasets for multi-class classification within error groups."""
     datasets = []
 
-    # Load error groups from JSON file based on scenario ID
-    error_groups = load_groups("s04")
+    # Load error groups from JSON file based on scenario selection
+    error_groups = load_groups(
+        scenario_selection
+    )  # Use parameter instead of hardcoded "s04"
 
     # Process each group
     for group_name, group_errors in error_groups.items():
@@ -209,7 +189,9 @@ def _get_multiclass_with_groups(
             name=group_name,
             x_values=filtered_torque_values,
             y_values=y_values,
-            sampling_selection="multiclass_with_groups",
+            scenario_selection=scenario_selection,
+            sampling_selection=sampling_selection,
+            modeling_selection=modeling_selection,
             class_count=len(group_errors) + 1,  # Normal + all classes in group
             class_names=class_names,
             normal_counts=n_normal,
@@ -229,8 +211,13 @@ def _get_multiclass_with_groups(
     return datasets
 
 
-def _get_multiclass_with_all(
-    torque_values: np.ndarray, class_values: np.ndarray, scenario_condition: np.ndarray
+def sample_s04_multiclass_with_all(
+    torque_values: np.ndarray,
+    class_values: np.ndarray,
+    scenario_condition: np.ndarray,
+    scenario_selection: str,
+    sampling_selection: str,
+    modeling_selection: str,
 ) -> List[ExperimentDataset]:
     """Generate dataset for multi-class classification with one class for normals and N classes for errors."""
     # Map class values to integers (1-25 or however many classes)
@@ -279,7 +266,9 @@ def _get_multiclass_with_all(
         name="all_errors",
         x_values=torque_values,
         y_values=y_values,
-        sampling_selection="multiclass_with_all",
+        scenario_selection=scenario_selection,
+        sampling_selection=sampling_selection,
+        modeling_selection=modeling_selection,
         class_count=len(unique_classes) + 1,  # Normal + all error classes
         class_names=class_names,
         normal_counts=n_normal,
@@ -289,12 +278,3 @@ def _get_multiclass_with_all(
     )
 
     return [dataset]  # Return as a list for consistent interface
-
-
-"""
-TODO: 
-- In a future release, this should be moved to a separate module sampling/
-- This way, we can start to implement s05 and s06 as well 
-- The scenarios are currently not compatible because s04 has normal and faulty in a single class
-- For all other scenarios, we can use the "is normal" tag in the class yml files (pyscrew)
-"""

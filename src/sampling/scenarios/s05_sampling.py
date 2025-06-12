@@ -1,55 +1,24 @@
-from typing import Callable, Dict, List, Tuple
+from typing import List
 
 import numpy as np
 
-from ...experiments.experiment_dataset import ExperimentDataset
-from ..groups import load_groups
+from src.experiments.experiment_dataset import ExperimentDataset
+from src.sampling.groups import load_groups
 
 
-def get_experiment_functions(
-    sampling_selections: List[str],
-) -> Dict[
-    str, Callable[[Tuple[np.ndarray, np.ndarray, np.ndarray]], List[ExperimentDataset]]
-]:
-    """
-    Returns dict of lazy functions for s05 experiments.
-    """
-    functions = {}
-    for exp_name in sampling_selections:
-        if exp_name == "multiclass_within_groups":
-            functions[exp_name] = lambda processed_data: _get_multiclass_within_groups(
-                *processed_data
-            )
-        elif exp_name == "multiclass_with_all":
-            functions[exp_name] = lambda processed_data: _get_multiclass_with_all(
-                *processed_data
-            )
-        elif exp_name == "binary_for_extremes":
-            functions[exp_name] = lambda processed_data: _get_binary_for_extremes(
-                *processed_data
-            )
-        else:  # Just a placeholder for more experiments
-            functions[exp_name] = lambda processed_data: _placeholder_implementation(
-                exp_name
-            )
-    return functions
-
-
-def _placeholder_implementation(sampling_selection: str) -> List[ExperimentDataset]:
-    """Placeholder for binary experiments - replace with actual s05 sampling logic"""
-    raise NotImplementedError(
-        f"s05 sampling for '{sampling_selection}' not yet implemented. "
-        f"Only multiclass experiments are currently supported."
-    )
-
-
-def _get_binary_for_extremes(torque_values, class_values, scenario_condition):
+def sample_s05_binary_for_extremes(
+    torque_values: np.ndarray,
+    class_values: np.ndarray,
+    scenario_condition: np.ndarray,
+    scenario_selection: str,
+    sampling_selection: str,
+    modeling_selection: str,
+) -> List[ExperimentDataset]:
     """Generate datasets for binary classification between parameter extremes in each s05 group."""
-    # Initialize a list to return the experiment datasets
     datasets: List[ExperimentDataset] = []
 
-    # Load s05 groups from JSON
-    groups = load_groups("s05")
+    # Load groups from JSON using scenario parameter
+    groups = load_groups(scenario_selection)
 
     for group_name, group_classes in groups.items():
         # Get sorted unique classes to find extremes
@@ -88,30 +57,38 @@ def _get_binary_for_extremes(torque_values, class_values, scenario_condition):
             name=f"{group_name}_extremes",
             x_values=filtered_torque_values,
             y_values=y_values,
-            sampling_selection="binary_for_extremes",
+            scenario_selection=scenario_selection,
+            sampling_selection=sampling_selection,
+            modeling_selection=modeling_selection,
             class_count=2,
             class_names=class_names,
             normal_counts=normal_counts,
             faulty_counts=abnormal_counts,
             faulty_ratio=fault_ratio,
-            description=f"Binary classification between parameter extremes in s05 group '{group_name}': {most_normal_class} vs {most_abnormal_class}",
+            description=f"Binary classification between parameter extremes in {scenario_selection} group '{group_name}': {most_normal_class} vs {most_abnormal_class}",
         )
         datasets.append(dataset)
 
     return datasets
 
 
-def _get_multiclass_within_groups(torque_values, class_values, scenario_condition):
+def sample_s05_multiclass_within_groups(
+    torque_values: np.ndarray,
+    class_values: np.ndarray,
+    scenario_condition: np.ndarray,
+    scenario_selection: str,
+    sampling_selection: str,
+    modeling_selection: str,
+) -> List[ExperimentDataset]:
     """Generate datasets for multi-class classification within s05 error groups."""
 
     # Configuration: Group duplicate parameter values (e.g., switching-point-15-1 and switching-point-15-2)
     GROUP_DUPLICATE_PARAMETERS = True  # TODO: discuss with Marco
 
-    # Initialize a list to return the experiment datasets
     datasets: List[ExperimentDataset] = []
 
-    # Load s05 groups from JSON
-    groups = load_groups(group_name="s05")
+    # Load groups from JSON using scenario parameter
+    groups = load_groups(scenario_selection)
 
     def _extract_parameter_value(class_name, group_name):
         """
@@ -199,13 +176,15 @@ def _get_multiclass_within_groups(torque_values, class_values, scenario_conditio
             name=group_name,
             x_values=filtered_torque_values,
             y_values=filtered_class_values,
-            sampling_selection="multiclass_within_groups",
+            scenario_selection=scenario_selection,
+            sampling_selection=sampling_selection,
+            modeling_selection=modeling_selection,
             class_count=len(unique_class_names),
             class_names=class_names,
             normal_counts=normal_counts,
             faulty_counts=faulty_counts,
             faulty_ratio=fault_ratio,
-            description=f"Multi-class classification within s05 group '{group_name}'"
+            description=f"Multi-class classification within {scenario_selection} group '{group_name}'"
             + (
                 f" (grouped duplicate parameters)" if GROUP_DUPLICATE_PARAMETERS else ""
             ),
@@ -215,7 +194,14 @@ def _get_multiclass_within_groups(torque_values, class_values, scenario_conditio
     return datasets
 
 
-def _get_multiclass_with_all(torque_values, class_values, scenario_condition):
+def sample_s05_multiclass_with_all(
+    torque_values: np.ndarray,
+    class_values: np.ndarray,
+    scenario_condition: np.ndarray,
+    scenario_selection: str,
+    sampling_selection: str,
+    modeling_selection: str,
+) -> List[ExperimentDataset]:
     """
     Generate dataset for multi-class classification with all s05 classes.
 
@@ -247,13 +233,15 @@ def _get_multiclass_with_all(torque_values, class_values, scenario_condition):
         name="all_errors",
         x_values=torque_values,
         y_values=y_values,
-        sampling_selection="multiclass_with_all",
+        scenario_selection=scenario_selection,
+        sampling_selection=sampling_selection,
+        modeling_selection=modeling_selection,
         class_count=len(unique_class_names),
         class_names=class_names,
         normal_counts=normal_counts,
         faulty_counts=faulty_counts,
         faulty_ratio=fault_ratio,
-        description=f"Multi-class classification with all {len(unique_class_names)} s05 parameter variations",
+        description=f"Multi-class classification with all {len(unique_class_names)} {scenario_selection} parameter variations",
     )
 
     return [dataset]

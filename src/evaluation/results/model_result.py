@@ -1,17 +1,35 @@
-from typing import Any, Dict, List
+from typing import Dict, List, Any
 
 import numpy as np
 
+from .base_result import BaseResult
 from .fold_result import FoldResult
 
 
-class ModelResult:
-    """Results from evaluating a model across all cross-validation folds."""
+class ModelResult(BaseResult):
+    """
+    Results from evaluating a model across all cross-validation folds.
 
-    def __init__(self, model_name: str, dataset_name: str):
+    Container for all fold results in an experiment. Inherits static configuration
+    from BaseResult for MLflow tagging and cross-experiment queries.
+    """
+
+    def __init__(
+        self,
+        scenario_selection: str,
+        sampling_selection: str,
+        modeling_selection: str,
+        dataset_name: str,
+        dataset_tags: Dict[str, Any],
+        model_name,
+    ) -> None:
         """Initialize model result to hold multiple fold results."""
+
+        # Call parent constructor with the core configuration
+        super().__init__(scenario_selection, sampling_selection, modeling_selection)
+
         # Set names for model and dataset
-        self.model_name = model_name
+        self.name = model_name
         self.dataset_name = dataset_name
 
         # Initialize an empty list to hold all fold results

@@ -76,15 +76,9 @@ class ExperimentRunner:
         # Initialize MLflow manager
         self.mlflow_manager = MLflowManager(port=mlflow_port)
 
-        # Initialize experiment result class to track all results
-        self.experiment_result = ExperimentResult(
-            scenario_selection=self.scenario_selection,
-            sampling_selection=self.sampling_selection,
-            modeling_selection=self.modeling_selection,
-        )
-
         # Instance variables for stateful design
         self.datasets: List[ExperimentDataset] = []
+        self.results: ExperimentResult = None
         self.models: Dict[str, Any] = {}
 
         self._log_initialization()
@@ -180,6 +174,13 @@ class ExperimentRunner:
     def _run_experiment(self) -> None:
         """Execute main experiment loop with clean start/update MLflow pattern."""
 
+        # Initialize experiment result class to track all results
+        self.experiment_result = ExperimentResult(
+            scenario_selection=self.scenario_selection,
+            sampling_selection=self.sampling_selection,
+            modeling_selection=self.modeling_selection,
+        )
+
         # START: Initialize main experiment run
         self.mlflow_manager.start_experiment_run(self.experiment_result)
 
@@ -203,7 +204,18 @@ class ExperimentRunner:
             self.mlflow_manager.end_run()
 
     def _run_dataset(self, experiment_dataset: ExperimentDataset) -> DatasetResult:
-        """Process all models on a single dataset."""
+        """Process all models on a single dataset.
+
+        Takes a single DatasetResult, iteartes all models and adds a ModelResult to
+        the Dataset Result class for each model, returns the Dataset Result.
+        """
+
+        # Create a tag dict from the experiment dataset for mlflow logging
+        dataset_tags = {
+            key: value
+            for key, value in experiment_dataset.to_dict().items()
+            if key not in ["name", "x_values", "y_values"]
+        }
 
         # Initialize dataset result with inherited trio
         dataset_result = DatasetResult(
@@ -211,11 +223,7 @@ class ExperimentRunner:
             sampling_selection=self.sampling_selection,
             modeling_selection=self.modeling_selection,
             dataset_name=experiment_dataset.name,
-            dataset_tags={
-                key: value
-                for key, value in experiment_dataset.to_dict().items()
-                if key not in ["name", "x_values", "y_values"]
-            },
+            dataset_tags=dataset_tags,
         )
 
         # START: Initialize dataset run
@@ -225,10 +233,10 @@ class ExperimentRunner:
         self._update_split_method(experiment_dataset)
 
         try:
-            # Process all models for this dataset
+            # Iterate all models for the current dataset
             for model_idx, model_name in enumerate(self.models):
-                progress = f"{model_idx + 1}/{len(self.models)}"
-                self.logger.info(f"  Applying model {progress}: {model_name}")
+                progress = f"({model_idx + 1}/{len(self.models)})"  # e.g. "(2/5)"
+                self.logger.info(f"- Applying model {progress}: {model_name}")
 
                 try:
                     model_result = self._run_model(experiment_dataset, model_name)
@@ -252,21 +260,27 @@ class ExperimentRunner:
 
         return dataset_result
 
-    def _run_model(self, dataset: ExperimentDataset, model_name: str) -> ModelResult:
+    def _run_model(
+        self, experiment_dataset: ExperimentDataset, model_name: str
+    ) -> ModelResult:
         """Process all folds of a model for a given dataset."""
 
-        # Initialize model result
+        # Initialize model result with inherited trio
         model_result = ModelResult(
+            scenario_selection=self.scenario_selection,
+            sampling_selection=self.sampling_selection,
+            modeling_selection=self.modeling_selection,
+            dataset_name=experiment_dataset.name,
             model_name=model_name,
-            dataset_name=dataset.name,
+            dataset_name=experiment_dataset.name,
         )
 
         # START: Initialize model run
         self.mlflow_manager.start_model_run(model_result)
 
         # Get data and model
-        x_values = dataset.x_values
-        y_values = dataset.y_values
+        x_values = experiment_dataset.x_values
+        y_values = experiment_dataset.y_values
         model = self.models[model_name]
 
         try:

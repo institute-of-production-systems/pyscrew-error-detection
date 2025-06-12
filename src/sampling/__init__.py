@@ -1,1 +1,1 @@
-from .sample_datasets import sample_datasets
+from .sampling import sample_datasets

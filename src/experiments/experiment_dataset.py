@@ -9,11 +9,15 @@ class ExperimentDataset:
     """Standardized dataset representation for all experiment types."""
 
     name: str
-
     x_values: np.ndarray
     y_values: np.ndarray
 
-    sampling_selection: str
+    # The three crucial experimental design choices (static configuration)
+    scenario_selection: str  # Which dataset (s04/s05/s06)
+    sampling_selection: str  # Which sampling strategy
+    modeling_selection: str  # Which model set (debug/fast/paper/full)
+
+    # Dataset-specific metadata
     class_count: int
     class_names: dict[int:str]
     normal_counts: int
@@ -22,5 +26,5 @@ class ExperimentDataset:
     description: str
 
     def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary, inlcuding None values."""
+        """Convert to dictionary, including None values."""
         return asdict(self)
