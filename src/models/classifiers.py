@@ -44,14 +44,14 @@ def load_model_configs() -> Dict[str, Dict[str, Any]]:
 
 
 def get_classifier_dict(
-    model_selection: str, random_seed: int, n_jobs: int
+    modeling_selection: str, random_seed: int, n_jobs: int
 ) -> Dict[str, Any]:
     """
     Return a dictionary of initialized models based on selection.
 
     Parameters:
     -----------
-    model_selection : str
+    modeling_selection : str
         One of 'debug', 'fast', 'paper', 'full', 'sklearn', 'sktime'
     random_seed : int
         Random seed to set for all models that support it
@@ -67,29 +67,29 @@ def get_classifier_dict(
     Raises:
     -------
     ConfigurationError
-        If model_selection is not valid or config files cannot be loaded
+        If modeling_selection is not valid or config files cannot be loaded
     """
     try:
         # Load model configurations
         model_configs = load_model_configs()
 
         logger.debug(
-            f"Initializing models for '{model_selection}' selection with random_seed={random_seed}, n_jobs={n_jobs}"
+            f"Initializing models for '{modeling_selection}' selection with random_seed={random_seed}, n_jobs={n_jobs}"
         )
 
-        # Validate model_selection
+        # Validate modeling_selection
         valid_selections = ["debug", "fast", "paper", "full", "sklearn", "sktime"]
-        if model_selection not in valid_selections:
+        if modeling_selection not in valid_selections:
             raise ConfigurationError(
-                f"Invalid model_selection: {model_selection}. Must be one of {valid_selections}"
+                f"Invalid modeling_selection: {modeling_selection}. Must be one of {valid_selections}"
             )
 
         # Initialize empty result dictionary
         classifiers: Dict[str, Any] = {}
 
-        # Filter models based on model_selection
+        # Filter models based on modeling_selection
         for name, config in model_configs.items():
-            if model_selection in config.get("in_sets", []):
+            if modeling_selection in config.get("in_sets", []):
                 try:
                     classifiers[name] = _initialize_model(
                         name, config, random_seed, n_jobs
@@ -102,7 +102,7 @@ def get_classifier_dict(
                     ) from e
 
         logger.info(
-            f"Initialized {len(classifiers)} models for '{model_selection}' selection"
+            f"Initialized {len(classifiers)} models for '{modeling_selection}' selection"
         )
         return classifiers
 

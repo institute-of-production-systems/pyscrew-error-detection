@@ -11,7 +11,7 @@ logger = get_logger(__name__)
 def get_metrics(
     y_true: Union[Sequence, np.ndarray],
     y_pred: Union[Sequence, np.ndarray],
-    experiment_name: str = None,
+    sampling_selection: str = None,
 ) -> Dict[str, float]:
     """
     Get dict to evaluate model performance for classification using direct metrics.
@@ -22,7 +22,7 @@ def get_metrics(
         Ground truth labels
     y_pred : array-like
         Predicted labels
-    experiment_name : str, optional
+    sampling_selection : str, optional
         Type of experiment ('binary_vs_ref', 'binary_vs_all', 'multiclass_with_groups', 'multiclass_with_all')
 
     Returns:
@@ -33,7 +33,7 @@ def get_metrics(
     result_dict = {"accuracy": accuracy_score(y_true, y_pred)}
 
     # Determine metric parameters based on experiment type
-    if experiment_name is None:
+    if sampling_selection is None:
         n_unique = len(np.unique(y_true))
         experiment_type = "bi" if n_unique == 2 else "mc"
         logger.debug(
@@ -41,7 +41,7 @@ def get_metrics(
             Infering experiment type from 'y_true' as '{experiment_type}"
         )
     else:
-        experiment_type = experiment_name.split("_")[0]
+        experiment_type = sampling_selection.split("_")[0]
 
     if experiment_type in ["bi", "binary"]:  # Binary classification
         # the sampling defined that 1 = faulty
@@ -52,7 +52,7 @@ def get_metrics(
 
     else:  # Invalid
         raise ValueError(
-            f"Invalid experiment name: '{experiment_name}'. "
+            f"Invalid experiment name: '{sampling_selection}'. "
             f"Must start with 'binary' or 'multiclass'"
         )
 

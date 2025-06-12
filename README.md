@@ -146,9 +146,9 @@ python main.py --quiet
 from src.experiments import ExperimentRunner
 
 runner = ExperimentRunner(
-    experiment_name="binary_vs_ref",
-    model_selection="paper",
-    scenario_id="s04",           # Configurable dataset
+    sampling_selection="binary_vs_ref",
+    modeling_selection="paper",
+    scenario_selection="s04",           # Configurable dataset
     target_length=2000,          # Fixed preprocessing  
     cv_folds=5,                  # Configurable via CLI
     random_seed=42,              # Configurable via CLI

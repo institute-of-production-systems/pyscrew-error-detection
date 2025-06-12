@@ -20,7 +20,7 @@ def ensure_directory(path):
     os.makedirs(path, exist_ok=True)
 
 
-def save_results_with_plots(results_df, base_dir, experiment_name):
+def save_results_with_plots(results_df, base_dir, sampling_selection):
     """
     Save results DataFrame and generate standard visualizations.
 
@@ -30,7 +30,7 @@ def save_results_with_plots(results_df, base_dir, experiment_name):
         DataFrame containing model results with metrics.
     base_dir : str
         Base directory for saving results.
-    experiment_name : str
+    sampling_selection : str
         Name of the experiment (used for subdirectory).
 
     Returns:
@@ -47,7 +47,7 @@ def save_results_with_plots(results_df, base_dir, experiment_name):
         return None
 
     # Create directory structure
-    results_path = os.path.join(base_dir, experiment_name)
+    results_path = os.path.join(base_dir, sampling_selection)
     images_path = os.path.join(results_path, "images")
     ensure_directory(results_path)
     ensure_directory(images_path)
