@@ -50,20 +50,8 @@ class DatasetResult(BaseResult):
         self.model_results.append(model_result)
 
     def get_result_tags(self) -> Dict[str, str]:
-        """
-        Get static tags that inherit down MLflow hierarchy for cross-experiment queries.
-        Enables SQL queries like: WHERE tags.run_name LIKE 'run_s06_%'
-        """
-        return {
-            "run_name": self.run_name,
-            "scenario_selection": self.scenario_selection,
-            "sampling_selection": self.sampling_selection,
-            "modeling_selection": self.modeling_selection,
-            "start_time": self.get_start_time(),
-            "end_time": self.get_end_time(),
-            "run_time": self.get_run_time(),
-            **self.tags,
-        }
+        """Get static tags for cross-experiment queries."""
+        return {**super().get_result_tags(), **self.tags}
 
     def get_performance_summary(self) -> Dict[str, Any]:
         """Get performance summary across all models for this dataset."""

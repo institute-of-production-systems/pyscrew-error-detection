@@ -73,18 +73,17 @@ class MLflowManager:
     def start_model_run(self, model_result: ModelResult) -> None:
         """Initialize model run with placeholder metrics."""
         mlflow.start_run(run_name=model_result.name, nested=True)
-        mlflow.set_tags({})
-        mlflow.log_metrics({})
+        mlflow.set_tags(model_result.get_result_tags())
+        mlflow.log_metrics(model_result.get_avg_metrics())
         self.logger.debug(f"Started model run: {model_result.name}")
 
-    def start_fold_run(self, fold_index: int) -> None:
+    def start_fold_run(self, fold_result: FoldResult) -> None:
         """Initialize fold run structure."""
-        run_name = f"fold_{fold_index}"
-
-        mlflow.start_run(run_name=run_name, nested=True)
-
-        # Log fold parameters
-        mlflow.log_params({"fold_index": fold_index, "fold_type": "cross_validation"})
+        mlflow.start_run(run_name=fold_result.name, nested=True)
+        mlflow.set_tags(fold_result.get_result_tags())
+        mlflow.log_metrics(fold_result.get_metrics())
+        mlflow.log_params(fold_result.get_params())
+        self.logger.debug(f"Started fold run: {fold_result.name}")
 
     # ================================
     # UPDATE METHODS - Push results
@@ -94,10 +93,10 @@ class MLflowManager:
         """Update fold run with actual results after fold completion."""
         try:
             # Log fold metrics
-            mlflow.log_metrics(fold_result.get_mlflow_metrics())
+            mlflow.log_metrics({})  # fold_result.get_mlflow_metrics())
 
             # Log fold parameters
-            mlflow.log_params(fold_result.get_mlflow_params())
+            mlflow.log_params({})  # fold_result.get_mlflow_params())
 
             # Log confusion matrix as artifact
             try:
@@ -119,7 +118,7 @@ class MLflowManager:
         """Update model run with current averages after each fold completion."""
         try:
             # Get current metrics (recalculated from all completed folds)
-            current_metrics = model_result.get_mlflow_metrics()
+            current_metrics = {}  # model_result.get_mlflow_metrics()
 
             # Update the model run with current averages
             mlflow.log_metrics(current_metrics)
@@ -180,7 +179,7 @@ class MLflowManager:
 
         except Exception as e:
             self.logger.warning(
-                f"Failed to update dataset {dataset_result.dataset_name}: {str(e)}"
+                f"Failed to update dataset {dataset_result.name}: {str(e)}"
             )
 
     def update_experiment_run(self, experiment_result: ExperimentResult) -> None:
