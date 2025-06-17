@@ -1,9 +1,11 @@
 import time
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Union
 
 import numpy as np
 from sklearn.base import BaseEstimator
+from sklearn.metrics import confusion_matrix
 from sktime.classification.base import BaseClassifier
+from sktime.datatypes._panel._convert import from_2d_array_to_nested
 
 from src.evaluation.get_metrics import get_metrics
 from src.experiments.experiment_dataset import ExperimentDataset
@@ -25,6 +27,7 @@ class FoldResult(BaseResult):
         experiment_dataset: ExperimentDataset,
         model_name: str,
         fold_index: int,
+        model: Union[BaseEstimator, BaseClassifier],
     ):
         """
         Initialize fold result for a specific CV fold.
@@ -45,6 +48,7 @@ class FoldResult(BaseResult):
             experiment_dataset.modeling_selection,
         )
         self.name = f"fold_{fold_index}"
+        self.model = model
 
         # Model information
         self.model_name = model_name
@@ -67,20 +71,14 @@ class FoldResult(BaseResult):
         # Store reference to dataset for training (temporary)
         self._experiment_dataset = experiment_dataset
 
-        # Initialize empty - will be populated by train_and_evaluate
+        # Initialize empty, to be later populated by train_and_evaluate
         self.metrics = get_metrics()
         self.y_true = None
         self.y_pred = None
-        self.training_time = 0.0
-        self.prediction_time = 0.0
-        self.metadata = {}
+        self.time_to_train = 0.0
+        self.time_to_pred = 0.0
 
-    def train_and_evaluate(
-        self,
-        model: Union[BaseEstimator, BaseClassifier],
-        train_idx: np.ndarray,
-        test_idx: np.ndarray,
-    ) -> None:
+    def train_and_evaluate(self, train_idx: np.ndarray, test_idx: np.ndarray) -> None:
         """
         Train model and evaluate on test set.
 
@@ -105,17 +103,8 @@ class FoldResult(BaseResult):
             y_test = self._experiment_dataset.y_values[test_idx]
 
             # Train and evaluate
-            self._train_model(model, x_train, y_train)
-            self._evaluate_model(model, x_test, y_test)
-
-            # Store metadata
-            self.metadata = {
-                "model_type": (
-                    "sktime" if self._is_sktime_classifier(model) else "sklearn"
-                ),
-                "train_samples": self.n_train,
-                "test_samples": self.n_test,
-            }
+            self._train_model(x_train, y_train)
+            self._evaluate_model(x_test, y_test)
 
             # Clear dataset reference to save memory
             self._experiment_dataset = None
@@ -131,59 +120,56 @@ class FoldResult(BaseResult):
             }
             self.y_true = np.array([0])
             self.y_pred = np.array([0])
-            self.training_time = 0.0
-            self.prediction_time = 0.0
-            self.metadata = {"error": str(e), "failed": True}
+            self.time_to_train = 0.0
+            self.time_to_pred = 0.0
 
-    def _train_model(self, model, x_train, y_train) -> None:
+    def _train_model(self, x_train, y_train) -> None:
         """Train the model with timing."""
         # Format data for model type
-        is_sktime_model = self._is_sktime_classifier(model)
-        x_train_formatted = self._format_data_for_modeling(x_train, is_sktime_model)
+        x_train_formatted = self._format_data_for_modeling(x_train)
 
         # Train with timing
         train_start_time = time.time()
-        model.fit(x_train_formatted, y_train)
-        self.training_time = time.time() - train_start_time
+        self.model.fit(x_train_formatted, y_train)
+        self.time_to_train = time.time() - train_start_time
 
-    def _evaluate_model(self, model, x_test, y_test) -> None:
+    def _evaluate_model(self, x_test, y_test) -> None:
         """Evaluate the model with timing."""
         # Format data for model type
-        is_sktime_model = self._is_sktime_classifier(model)
-        x_test_formatted = self._format_data_for_modeling(x_test, is_sktime_model)
+        x_test_formatted = self._format_data_for_modeling(x_test)
 
         # Predict with timing
         pred_start_time = time.time()
-        y_pred = model.predict(x_test_formatted)
-        self.prediction_time = time.time() - pred_start_time
+        y_pred = self.model.predict(x_test_formatted)
+        self.time_to_pred = time.time() - pred_start_time
 
-        # Format predictions
+        # Format predictions (required since we are using with sktime and sklearn)
         self.y_pred = self._format_pred_for_evaluation(y_pred)
         self.y_true = self._format_pred_for_evaluation(y_test)
 
         # Update the metrics attribute with updated metrics calculation
         self.metrics = get_metrics(self.y_true, self.y_pred)
 
-    def _is_sktime_classifier(self, model) -> bool:
+    def _is_sktime_classifier(self) -> bool:
         """Determine if a model is a sktime classifier."""
-        if isinstance(model, BaseClassifier):
+        if isinstance(self.model, BaseClassifier):
             return True
-        if hasattr(model, "_is_sktime_classifier") or hasattr(
-            model, "_is_sktime_estimator"
+        if hasattr(self.model, "_is_sktime_classifier") or hasattr(
+            self.model, "_is_sktime_estimator"
         ):
             return True
-        if hasattr(model, "__module__") and any(
-            mod in model.__module__ for mod in ["sktime", "sktime_dl", "sktime_forest"]
+        if hasattr(self.model, "__module__") and any(
+            mod in self.model.__module__
+            for mod in ["sktime", "sktime_dl", "sktime_forest"]
         ):
             return True
         return False
 
-    def _format_data_for_modeling(self, x_values, is_sktime_model):
+    def _format_data_for_modeling(self, x_values):
         """Format data to be compatible with the specific model type."""
-        if not is_sktime_model:
+        if not self._is_sktime_classifier():
             return x_values
         else:
-            from sktime.datatypes._panel._convert import from_2d_array_to_nested
 
             return from_2d_array_to_nested(x_values)
 
@@ -233,26 +219,20 @@ class FoldResult(BaseResult):
         metrics = self.metrics.copy()
         metrics.update(
             {
-                "training_time_seconds": self.training_time,
-                "prediction_time_seconds": self.prediction_time,
+                "time_to_train": self.time_to_train,
+                "time_to_pred": self.time_to_pred,
             }
         )
         return metrics
 
     def get_params(self) -> Dict[str, Any]:
-        """Get parameters for MLflow logging."""
-        return {
-            "fold_index": self.fold_index,
-            **{
-                k: v
-                for k, v in self.metadata.items()
-                if isinstance(v, (str, int, float, bool))
-            },
-        }
+        """Get model parameters for MLflow logging."""
+        if self.model is not None:
+            return self.model.get_params()
+        return {}
 
     def get_confusion_matrix(self) -> np.ndarray:
         """Get confusion matrix for this fold."""
-        from sklearn.metrics import confusion_matrix
 
         return confusion_matrix(self.y_true, self.y_pred)
 

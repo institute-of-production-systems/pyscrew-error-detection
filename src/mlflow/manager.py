@@ -1,5 +1,5 @@
-import os
 import logging
+import os
 from typing import Optional
 
 import numpy as np
@@ -74,141 +74,43 @@ class MLflowManager:
         """Initialize model run with placeholder metrics."""
         mlflow.start_run(run_name=model_result.name, nested=True)
         mlflow.set_tags(model_result.get_tags())
-        mlflow.log_metrics(model_result.get_avg_metrics())
+        mlflow.log_metrics(model_result.get_metrics())
         self.logger.debug(f"Started model run: {model_result.name}")
 
     def start_fold_run(self, fold_result: FoldResult) -> None:
         """Initialize fold run structure."""
         mlflow.start_run(run_name=fold_result.name, nested=True)
         mlflow.set_tags(fold_result.get_tags())
-        print(fold_result.get_metrics())
         mlflow.log_metrics(fold_result.get_metrics())
-        # mlflow.log_params(fold_result.get_params())
+        mlflow.log_params(fold_result.get_params())
         self.logger.debug(f"Started fold run: {fold_result.name}")
 
     # ================================
     # UPDATE METHODS - Push results
     # ================================
 
+    def update_model_run(self, model_result: ModelResult) -> None:
+        """Update model run with current metrics, tags, and confusion matrix."""
+        mlflow.set_tags(model_result.get_tags())
+        mlflow.log_metrics(model_result.get_metrics())
+        # Log a summed-up matrix if available
+        if model_result.fold_results:
+            self._log_model_confusion_matrix(model_result)
+
     def update_fold_run(self, fold_result: FoldResult) -> None:
         """Update fold run with actual results after fold completion."""
-        mlflow.log_metrics(fold_result.get_metrics())
         mlflow.set_tags(fold_result.get_tags())
+        mlflow.log_metrics(fold_result.get_metrics())
         # Log confusion matrix if available
         if fold_result.y_true is not None and fold_result.y_pred is not None:
             self._log_fold_confusion_matrix(fold_result)
 
-    def update_model_run(self, model_result: ModelResult) -> None:
-        """Update model run with current averages after each fold completion."""
-        try:
-            # Get current metrics (recalculated from all completed folds)
-            current_metrics = {}  # model_result.get_mlflow_metrics()
-
-            # Update the model run with current averages
-            mlflow.log_metrics(current_metrics)
-
-            # Update fold completion count
-            mlflow.log_metric("folds_completed", len(model_result.fold_results))
-
-            # Log aggregated confusion matrix
-            if model_result.confusion_matrix is not None:
-                self._log_confusion_matrix(model_result)
-
-            # Log stability analysis
-            self._log_fold_stability_analysis(model_result)
-
-        except Exception as e:
-            self.logger.warning(f"Failed to update model {model_result.name}: {str(e)}")
-
     def update_dataset_run(self, dataset_result: DatasetResult) -> None:
-        """Update dataset run with aggregates across all models."""
-        try:
-            if not dataset_result.model_results:
-                return
-
-            # Calculate aggregates across all models
-            f1_scores = [
-                mr.get_mean_metric("f1_score") for mr in dataset_result.model_results
-            ]
-            accuracies = [
-                mr.get_mean_metric("accuracy") for mr in dataset_result.model_results
-            ]
-
-            # Best performing model metrics
-            best_f1 = max(f1_scores) if f1_scores else 0.0
-            best_accuracy = max(accuracies) if accuracies else 0.0
-
-            # Average across all models (to identify easy/hard datasets)
-            avg_f1 = np.mean(f1_scores) if f1_scores else 0.0
-            avg_accuracy = np.mean(accuracies) if accuracies else 0.0
-
-            # Update dataset metrics
-            mlflow.log_metrics(
-                {
-                    "best_f1_score": best_f1,
-                    "best_accuracy": best_accuracy,
-                    "avg_f1_score": avg_f1,
-                    "avg_accuracy": avg_accuracy,
-                    "models_completed": len(dataset_result.model_results),
-                    "f1_score_std": np.std(f1_scores) if f1_scores else 0.0,
-                    "accuracy_std": np.std(accuracies) if accuracies else 0.0,
-                }
-            )
-
-            # Tag dataset difficulty based on average performance
-            difficulty = (
-                "easy" if avg_f1 > 0.8 else "medium" if avg_f1 > 0.6 else "hard"
-            )
-            mlflow.set_tag("dataset_difficulty", difficulty)
-
-        except Exception as e:
-            self.logger.warning(
-                f"Failed to update dataset {dataset_result.name}: {str(e)}"
-            )
+        mlflow.set_tags(dataset_result.get_tags())
 
     def update_experiment_run(self, experiment_result: ExperimentResult) -> None:
         """Update experiment run with progress counters."""
-        try:
-            # Count completed datasets and total trained models
-            completed_datasets = len(experiment_result.dataset_results)
-            total_trained_models = sum(
-                len(dr.model_results) for dr in experiment_result.dataset_results
-            )
-
-            # Update progress tags
-            mlflow.set_tags(
-                {
-                    "completed_datasets": str(completed_datasets),
-                    "trained_models": str(total_trained_models),
-                    "status": "running",  # Will be set to "completed" when experiment finishes
-                }
-            )
-
-        except Exception as e:
-            self.logger.warning(f"Failed to update experiment progress: {str(e)}")
-
-    def end_experiment_run(self, experiment_result: ExperimentResult) -> None:
-        """End experiment run with completion status."""
-        try:
-            # Update final tags
-            mlflow.set_tags(
-                {
-                    "status": "completed",
-                    "finish_time": experiment_result.end_time,
-                    "total_datasets": str(len(experiment_result.dataset_results)),
-                    "total_trained_models": str(
-                        sum(
-                            len(dr.model_results)
-                            for dr in experiment_result.dataset_results
-                        )
-                    ),
-                }
-            )
-
-            self.logger.info("End experiment run")
-
-        except Exception as e:
-            self.logger.warning(f"Failed to end experiment: {str(e)}")
+        mlflow.set_tags(experiment_result.get_tags())
 
     # ================================
     # HELPER METHODS
@@ -244,17 +146,36 @@ class MLflowManager:
             if os.path.exists(cm_path):
                 os.remove(cm_path)
 
+    def _save_and_log_confusion_matrix(self, confusion_matrix: np.ndarray) -> None:
+        """Save confusion matrix as CSV and log as MLflow artifact."""
+        filename = "confusion_matrix.csv"
+        pd.DataFrame(confusion_matrix).to_csv(filename, index=False)
+        mlflow.log_artifact(filename)
+
+        # Clean up temp file
+        if os.path.exists(filename):
+            os.remove(filename)
+
     def _log_fold_confusion_matrix(self, fold_result: FoldResult) -> None:
         """Log confusion matrix for a single fold."""
-        cm_path = f"fold_{fold_result.fold_index}_cm.csv"
-        try:
-            pd.DataFrame(fold_result.get_confusion_matrix()).to_csv(
-                cm_path, index=False
-            )
-            mlflow.log_artifact(cm_path)
-        finally:
-            if os.path.exists(cm_path):
-                os.remove(cm_path)
+        self._save_and_log_confusion_matrix(fold_result.get_confusion_matrix())
+
+    def _log_model_confusion_matrix(self, model_result: ModelResult) -> None:
+        """Log summed confusion matrix across all folds as artifact."""
+        if not model_result.fold_results:
+            return
+
+        # Sum up confusion matrices from all folds
+        summed_cm = None
+        for fold_result in model_result.fold_results:
+            fold_cm = fold_result.get_confusion_matrix()
+            if summed_cm is None:
+                summed_cm = fold_cm
+            else:
+                summed_cm += fold_cm
+
+        if summed_cm is not None:
+            self._save_and_log_confusion_matrix(summed_cm)
 
     def end_run(self) -> None:
         """End current MLflow run safely."""

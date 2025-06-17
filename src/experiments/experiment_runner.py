@@ -190,7 +190,6 @@ class ExperimentRunner:
 
             # END: Mark experiment as complete
             self.experiment_result.end()
-            self.manager.end_experiment_run(self.experiment_result)
 
         finally:
             self.manager.end_run()
@@ -222,7 +221,7 @@ class ExperimentRunner:
                 # Update manager
                 self.manager.update_dataset_run(dataset_result)
                 # 3. Logging (end)
-                f1_score = model_result.get_avg_metrics().get("avg_f1_score", 0.0)
+                f1_score = model_result.get_metrics().get("avg_f1_score", 0.0)
                 self.logger.info(f"{model_name}: f1_score (avg.) = {f1_score:.3f}")
         finally:
             self.manager.end_run()
@@ -268,13 +267,14 @@ class ExperimentRunner:
         """Process a single cross-validation fold."""
 
         # START: Initialize fold run
-        fold_result = FoldResult(experiment_dataset, model_name, fold_index)
+        model = self.models[model_name]
+        fold_result = FoldResult(experiment_dataset, model_name, fold_index, model)
         self.manager.start_fold_run(fold_result)
 
         try:
             # 1. Train and evaluate fold using the provided split indices
             train_idx, test_idx = split_indices
-            fold_result.train_and_evaluate(self.models[model_name], train_idx, test_idx)
+            fold_result.train_and_evaluate(train_idx, test_idx)
 
             # 2. Update manager
             self.manager.update_fold_run(fold_result)

@@ -85,37 +85,37 @@ class ModelResult(BaseResult):
 
         return tags
 
-    def get_avg_metrics(self):
+    def get_metrics(self) -> Dict[str, float]:
+        """Get aggregated metrics. Empty if no folds, single fold as-is, multiple folds averaged."""
+
+        # No folds completed
         if not self.fold_results:
             return {}
 
+        # Single fold - return as-is with std=0
         if len(self.fold_results) == 1:
-            return self.fold_results[0].metrics
+            metrics = self.fold_results[0].metrics.copy()
+            # Add std=0 for all metrics
+            for key in list(metrics.keys()):
+                metrics[f"{key}_std"] = 0.0
+            return metrics
 
-        # Calculate averages across all folds
-        all_metrics = {}
+        # Multiple folds - calculate mean and std
+        metrics = {}
         metric_names = self.fold_results[0].metrics.keys()
 
         for metric_name in metric_names:
-            values = [fold.metrics.get(metric_name, 0) for fold in self.fold_results]
-            all_metrics[f"avg_{metric_name}"] = np.mean(values)
-            all_metrics[f"std_{metric_name}"] = np.std(values)
-            # all_metrics[f"min_{metric_name}"] = np.min(values)
-            # all_metrics[f"max_{metric_name}"] = np.max(values)
+            values = [fold.metrics[metric_name] for fold in self.fold_results]
+            metrics[metric_name] = np.mean(values)
+            metrics[f"{metric_name}_std"] = np.std(values)
 
-        # Add timing info
-        train_times = [fold.training_time for fold in self.fold_results]
-        pred_times = [fold.prediction_time for fold in self.fold_results]
-        all_metrics["avg_training_time"] = np.mean(train_times)
-        all_metrics["avg_prediction_time"] = np.mean(pred_times)
-
-        return all_metrics
+        return metrics
 
     def __repr__(self) -> str:
         if not self.fold_results:
             return f"ModelResult({self.name}, no folds yet)"
 
-        metrics = self.get_avg_metrics()
+        metrics = self.get_metrics()
         f1_key = "f1_score" if len(self.fold_results) == 1 else "f1_score_avg"
         f1 = metrics.get(f1_key, 0)
 
