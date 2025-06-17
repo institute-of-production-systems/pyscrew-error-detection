@@ -1,5 +1,7 @@
 from typing import Any, Dict, List
 
+from numpy import unique
+
 from src.experiments.experiment_dataset import ExperimentDataset
 
 from .base_result import BaseResult
@@ -16,20 +18,20 @@ class DatasetResult(BaseResult):
 
     def __init__(self, experiment_dataset: ExperimentDataset) -> None:
         """
-        Initialize dataset result with core configuration.
+        Initialize dataset result from an ExperimentDataset.
 
         Parameters:
         -----------
-        scenario_selection : str
-            Dataset scenario (e.g., "s06")
-        sampling_selection : str
-            Sampling strategy (e.g., "binary_for_extremes")
-        modeling_selection : str
-            Model selection (e.g., "paper")
-        dataset_name : str
-            Name of the dataset (e.g., "group_1_cooling_time")
-        dataset_tags : Dict[str, Any]
-            Dataset-specific metadata tags
+        experiment_dataset : ExperimentDataset
+            Dataset containing:
+            - Core configuration (scenario, sampling, modeling selections)
+            - Data arrays (x_values, y_values)
+            - Metadata (class_count, class_names, description)
+
+        Computes and stores:
+        - n_samples: Total number of samples
+        - n_classes: Number of unique classes
+        - samples_per_class: Comma-separated string of class distributions
         """
         # Call parent constructor with the core configuration
         super().__init__(
@@ -38,9 +40,20 @@ class DatasetResult(BaseResult):
             experiment_dataset.modeling_selection,
         )
         self.name = experiment_dataset.name
-        self.tags = experiment_dataset.get_tags()
 
-        # Initialize an empty list to hold all model results
+        # Compute and store only what we need for tags
+        self.n_samples = len(experiment_dataset.x_values)
+        self.n_classes = experiment_dataset.class_count
+
+        # Calculate samples_per_class
+        unique_classes, counts = unique(experiment_dataset.y_values, return_counts=True)
+        self.samples_per_class = ":".join(map(str, counts))
+
+        # Store only lightweight metadata for plotting/analysis
+        self.class_names = experiment_dataset.class_names  # Just the dict
+        self.description = experiment_dataset.description
+
+        # Initialize empty list to hold model results
         self.model_results: List[ModelResult] = []
 
     def add_result(self, model_result: ModelResult) -> None:
@@ -49,9 +62,27 @@ class DatasetResult(BaseResult):
             raise TypeError("'model_result' must be a ModelResult instance")
         self.model_results.append(model_result)
 
-    def get_result_tags(self) -> Dict[str, str]:
-        """Get static tags for cross-experiment queries."""
-        return {**super().get_result_tags(), **self.tags}
+    def get_tags(self) -> Dict[str, str]:
+        """
+        Get dataset-specific tags plus inherited tags.
+
+        Returns:
+        --------
+        Dict[str, str]
+            Tags including:
+            - Inherited: scenario, sampling, modeling, timing
+            - Dataset-specific: n_samples, n_classes, samples_per_class
+        """
+        tags = super().get_tags()
+        tags.update(
+            {
+                # Add dataset metadata
+                "n_samples": str(self.n_samples),
+                "n_classes": str(self.n_classes),
+                "samples_per_class": self.samples_per_class,
+            }
+        )
+        return tags
 
     def get_performance_summary(self) -> Dict[str, Any]:
         """Get performance summary across all models for this dataset."""

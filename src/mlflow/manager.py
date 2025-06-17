@@ -61,28 +61,29 @@ class MLflowManager:
     def start_experiment_run(self, experiment_result: ExperimentResult) -> None:
         """Initialize main experiment run with basic structure."""
         mlflow.start_run(run_name=experiment_result.run_name, nested=False)
-        mlflow.set_tags(experiment_result.get_result_tags())
+        mlflow.set_tags(experiment_result.get_tags())
         self.logger.info(f"Started experiment run: '{experiment_result.run_name}'")
 
     def start_dataset_run(self, dataset_result: DatasetResult) -> None:
         """Initialize dataset run with metadata."""
         mlflow.start_run(run_name=dataset_result.name, nested=True)
-        mlflow.set_tags(dataset_result.get_result_tags())
+        mlflow.set_tags(dataset_result.get_tags())
         self.logger.info(f"Started dataset run: {dataset_result.name}")
 
     def start_model_run(self, model_result: ModelResult) -> None:
         """Initialize model run with placeholder metrics."""
         mlflow.start_run(run_name=model_result.name, nested=True)
-        mlflow.set_tags(model_result.get_result_tags())
+        mlflow.set_tags(model_result.get_tags())
         mlflow.log_metrics(model_result.get_avg_metrics())
         self.logger.debug(f"Started model run: {model_result.name}")
 
     def start_fold_run(self, fold_result: FoldResult) -> None:
         """Initialize fold run structure."""
         mlflow.start_run(run_name=fold_result.name, nested=True)
-        mlflow.set_tags(fold_result.get_result_tags())
+        mlflow.set_tags(fold_result.get_tags())
+        print(fold_result.get_metrics())
         mlflow.log_metrics(fold_result.get_metrics())
-        mlflow.log_params(fold_result.get_params())
+        # mlflow.log_params(fold_result.get_params())
         self.logger.debug(f"Started fold run: {fold_result.name}")
 
     # ================================
@@ -91,28 +92,11 @@ class MLflowManager:
 
     def update_fold_run(self, fold_result: FoldResult) -> None:
         """Update fold run with actual results after fold completion."""
-        try:
-            # Log fold metrics
-            mlflow.log_metrics({})  # fold_result.get_mlflow_metrics())
-
-            # Log fold parameters
-            mlflow.log_params({})  # fold_result.get_mlflow_params())
-
-            # Log confusion matrix as artifact
-            try:
-                confusion_matrix = fold_result.get_confusion_matrix()
-                if confusion_matrix is not None:
-                    cm_path = f"fold_{fold_result.fold_index}_cm.csv"
-                    pd.DataFrame(confusion_matrix).to_csv(cm_path, index=False)
-                    mlflow.log_artifact(cm_path)
-                    os.remove(cm_path)  # Clean up
-            except Exception as e:
-                self.logger.warning(f"Failed to log fold confusion matrix: {str(e)}")
-
-        except Exception as e:
-            self.logger.warning(
-                f"Failed to update fold {fold_result.fold_index}: {str(e)}"
-            )
+        mlflow.log_metrics(fold_result.get_metrics())
+        mlflow.set_tags(fold_result.get_tags())
+        # Log confusion matrix if available
+        if fold_result.y_true is not None and fold_result.y_pred is not None:
+            self._log_fold_confusion_matrix(fold_result)
 
     def update_model_run(self, model_result: ModelResult) -> None:
         """Update model run with current averages after each fold completion."""
@@ -256,6 +240,18 @@ class MLflowManager:
             mlflow.log_artifact(cm_path)
         except Exception as e:
             self.logger.warning(f"Failed to log confusion matrix: {str(e)}")
+        finally:
+            if os.path.exists(cm_path):
+                os.remove(cm_path)
+
+    def _log_fold_confusion_matrix(self, fold_result: FoldResult) -> None:
+        """Log confusion matrix for a single fold."""
+        cm_path = f"fold_{fold_result.fold_index}_cm.csv"
+        try:
+            pd.DataFrame(fold_result.get_confusion_matrix()).to_csv(
+                cm_path, index=False
+            )
+            mlflow.log_artifact(cm_path)
         finally:
             if os.path.exists(cm_path):
                 os.remove(cm_path)

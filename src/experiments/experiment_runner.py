@@ -281,7 +281,7 @@ class ExperimentRunner:
 
             # 3. Log progress
             f1_score = fold_result.metrics.get("f1_score", 0)
-            self.logger.info(f"      Fold {fold_index}: f1_score = {f1_score:.3f}")
+            self.logger.info(f"Fold {fold_index}: f1_score = {f1_score:.3f}")
 
         finally:
             self.manager.end_run()
@@ -305,15 +305,19 @@ class ExperimentRunner:
         Experiment -> Dataset -> Model -> Fold
         """
         try:
+            # 1. Load data and generate datasets
             self.datasets = self.get_all_datasets()
+
+            # 2. Initialize models
             self.models = self.get_all_models()
 
+            # 3. Setup MLflow tracking
             self._setup_experiment_tracking()
 
-            # Execute experiment with real-time logging
+            # 4. Main execution
             self._run_experiment()
 
-            # Generate final summary
+            # 5. Final evaluation
             self._evaluate_experiment()
 
             return self.experiment_result

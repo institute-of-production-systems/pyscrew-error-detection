@@ -274,3 +274,53 @@ def _get_param_names(module_name: str, class_name: str) -> List[str]:
     except Exception as e:
         logger.error(f"Unexpected error getting parameters for {class_name}: {str(e)}")
         return []
+
+
+def get_model_family(model_name: str) -> str:
+    """
+    Get the model family for a given model name.
+
+    Parameters:
+    -----------
+    model_name : str
+        Name of the model (e.g., 'RandomForestClassifier')
+
+    Returns:
+    --------
+    str
+        Model family (e.g., 'Tree', 'Neural', 'Distance') or 'Unknown'
+    """
+    try:
+        model_configs = load_model_configs()
+        if model_name in model_configs:
+            return model_configs[model_name].get("family", "Unknown")
+    except Exception as e:
+        logger.warning(f"Error getting model family for {model_name}: {str(e)}")
+    return "Unknown"
+
+
+def get_model_library(model_name: str) -> str:
+    """
+    Get the library (sklearn/sktime) for a given model name.
+
+    Parameters:
+    -----------
+    model_name : str
+        Name of the model (e.g., 'RandomForestClassifier')
+
+    Returns:
+    --------
+    str
+        Library name ('sklearn', 'sktime') or 'Unknown'
+    """
+    try:
+        model_configs = load_model_configs()
+        if model_name in model_configs:
+            module_path = model_configs[model_name]["import"]["from"]
+            if "sklearn" in module_path:
+                return "sklearn"
+            elif "sktime" in module_path:
+                return "sktime"
+    except Exception as e:
+        logger.warning(f"Error getting model library for {model_name}: {str(e)}")
+    return "Unknown"

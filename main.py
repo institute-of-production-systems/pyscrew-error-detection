@@ -65,8 +65,16 @@ SCENARIO_SAMPLING_COMPATIBILITY = {
         "multiclass_with_groups",
         "multiclass_with_all",
     ],
-    "s05": ["binary_for_extremes", "multiclass_with_all", "multiclass_within_groups"],
-    "s06": ["binary_for_extremes", "multiclass_with_all", "multiclass_within_groups"],
+    "s05": [
+        "binary_for_extremes",
+        "multiclass_with_all",
+        "multiclass_within_groups",
+    ],
+    "s06": [
+        "binary_for_extremes",
+        "multiclass_with_all",
+        "multiclass_within_groups",
+    ],
 }
 
 # Flatten all sampling options for CLI choices validation

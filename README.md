@@ -208,6 +208,47 @@ mlflow ui --port 5000
 - **Reproducible** with fixed random seeds
 - **Parallel execution** across models and folds
 
+## 📊 MLflow Tracking Architecture
+
+### 4-Level Hierarchy
+
+Our framework implements a hierarchical tracking structure that mirrors the experimental design:
+
+```
+Experiment (e.g., "run_s04_binary_vs_ref_paper")
+└── Dataset (e.g., "101_deformed-thread")
+    └── Model (e.g., "RandomForestClassifier")
+        └── Fold (e.g., "fold_0")
+```
+
+### Tag Inheritance
+
+Tags propagate down the hierarchy, enabling us to do cross-experiment queries. Each level inherits tags from its parent and adds its own:
+
+| Tag | Experiment | Dataset | Model | Fold | Description |
+|-----|------------|---------|-------|------|-------------|
+| **Core Configuration** |||||
+| `scenario` | ✓ | ✓ | ✓ | ✓ | Dataset selection (s04/s05/s06) |
+| `sampling` | ✓ | ✓ | ✓ | ✓ | Sampling strategy (binary_vs_ref, etc.) |
+| `modeling` | ✓ | ✓ | ✓ | ✓ | Model set (debug/fast/paper/full) |
+| **Timing** |||||
+| `start_time` | ✓ | ✓ | ✓ | ✓ | Pipeline start timestamp |
+| `end_time` | ✓ | ✓ | ✓ | ✓ | Pipeline end timestamp |
+| `run_time` | ✓ | ✓ | ✓ | ✓ | Human-readable duration |
+| **Dataset Metadata** |||||
+| `n_samples` | | ✓ | ✓ | ✓ | Total samples in dataset |
+| `n_classes` | | ✓ | ✓ | ✓ | Number of unique classes |
+| `samples_per_class` | | ✓ | ✓ | ✓ | Class distribution (e.g., "120:45") |
+| **Model Metadata** |||||
+| `model_name` | | | ✓ | ✓ | Classifier name |
+| `model_family` | | | ✓ | ✓ | Algorithm family (Tree, Neural, etc.) |
+| `model_library` | | | ✓ | ✓ | sklearn or sktime |
+| **Fold Metadata** |||||
+| `fold_index` | | | | ✓ | CV fold number (0-4) |
+| `n_train` | | | | ✓ | Training samples in fold |
+| `n_test` | | | | ✓ | Test samples in fold |
+
+
 ## 📋 Requirements
 
 - **Python**: 3.8+

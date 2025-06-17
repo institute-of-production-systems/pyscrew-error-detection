@@ -7,28 +7,43 @@ class BaseResult(ABC):
     """
     Base class for all result types with static configuration inheritance.
 
-    Provides the three crucial static tags (scenario, sampling, modeling) that
+    Provides the three core configuration tags (scenario, sampling, modeling) that
     inherit down the 4-level MLflow hierarchy, enabling cross-experiment queries.
-
     Also tracks end-to-end pipeline runtime to complement MLflow's per-run timing.
+
+    The inheritance hierarchy:
+    BaseResult -> ExperimentResult -> DatasetResult -> ModelResult -> FoldResult
+
+    All subclasses inherit the core configuration and timing tags.
     """
 
     def __init__(
         self, scenario_selection: str, sampling_selection: str, modeling_selection: str
     ):
-        """Initialize with the three crucial experimental design choices."""
-        # Core experimental configuration - inherited by all child runs
-        self.scenario_selection = scenario_selection  # e.g. "s06"
-        self.sampling_selection = sampling_selection  # e.g. "binary_for_extremes"
-        self.modeling_selection = modeling_selection  # e.g. "paper"
+        """
+        Initialize with the three core experimental design choices.
 
-        # SQL-friendly identifier for queries: "run_s06_binary_for_extremes_paper"
+        Parameters:
+        -----------
+        scenario_selection : str
+            PyScrew dataset to use (e.g., "s04", "s05", "s06")
+        sampling_selection : str
+            Sampling strategy (e.g., "binary_vs_ref", "multiclass_with_groups")
+        modeling_selection : str
+            Model set to evaluate (e.g., "debug", "fast", "paper", "full")
+        """
+        # Core experimental configuration - inherited by all child runs
+        self.scenario_selection = scenario_selection
+        self.sampling_selection = sampling_selection
+        self.modeling_selection = modeling_selection
+
+        # SQL-friendly run name for MLflow (not used in tags)
         self.run_name = f"run_{self.scenario_selection}_{self.sampling_selection}_{self.modeling_selection}"
 
-        # Pipeline timing (business time vs MLflow's technical time)
+        # Pipeline timing (supplements MLflow's automatic timing)
         self.start_time: Optional[str] = None  # Set on first access
         self.end_time: Optional[str] = None  # Set when end() called
-        self.run_time: Optional[str] = None  # Calculated when end() called
+        self.run_time: Optional[str] = None  # Human-readable duration
 
     def get_start_time(self) -> str:
         """Get start time, setting it on first access (lazy evaluation)."""
@@ -64,18 +79,34 @@ class BaseResult(ABC):
             else:
                 self.run_time = f"{seconds}s"
 
-    def get_result_tags(self) -> Dict[str, str]:
+    def get_tags(self) -> Dict[str, str]:
         """
         Get static tags that inherit down MLflow hierarchy for cross-experiment queries.
 
-        Enables SQL queries like: WHERE tags.run_name LIKE 'run_s06_%'
+        Returns:
+        --------
+        Dict[str, str]
+            Core configuration and timing tags:
+            - scenario: Dataset selectio
+            - sampling: Sampling strategy
+            - modeling: Model set
+            - start_time: Pipeline start timestamp
+            - end_time: Pipeline end timestamp (None if not ended)
+            - run_time: Human-readable duration (None if not ended)
+
+        Note:
+            The run_name attribute is used for MLflow run naming but not included
+            in tags to avoid redundancy.
         """
-        return {
-            "run_name": self.run_name,
-            "scenario_selection": self.scenario_selection,
-            "sampling_selection": self.sampling_selection,
-            "modeling_selection": self.modeling_selection,
+        tags = {
+            # Core configuration (shortened names for cleaner MLflow UI)
+            "scenario": self.scenario_selection,
+            "sampling": self.sampling_selection,
+            "modeling": self.modeling_selection,
+            # Timing information
             "start_time": self.get_start_time(),
             "end_time": self.get_end_time(),
             "run_time": self.get_run_time(),
         }
+
+        return tags

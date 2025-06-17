@@ -1,8 +1,9 @@
-from typing import Any, Dict, List
+from typing import Dict, List
 
 import numpy as np
 
 from src.experiments.experiment_dataset import ExperimentDataset
+from src.models import get_model_family, get_model_library
 
 from .base_result import BaseResult
 from .fold_result import FoldResult
@@ -12,13 +13,21 @@ class ModelResult(BaseResult):
     """
     Results from evaluating a model across all cross-validation folds.
 
-    Container for all fold results in an experiment. Inherits static configuration
-    from BaseResult for MLflow tagging and cross-experiment queries.
+    Container for all fold results for a specific model. Inherits static configuration
+    from BaseResult and dataset metadata from the ExperimentDataset.
     """
 
     def __init__(self, experiment_dataset: ExperimentDataset, model_name: str) -> None:
-        """Initialize model result to hold multiple fold results."""
+        """
+        Initialize model result for a specific model on a dataset.
 
+        Parameters:
+        -----------
+        experiment_dataset : ExperimentDataset
+            Dataset containing data and metadata
+        model_name : str
+            Name of the model (e.g., 'RandomForestClassifier')
+        """
         # Call parent constructor with the core configuration
         super().__init__(
             experiment_dataset.scenario_selection,
@@ -26,9 +35,20 @@ class ModelResult(BaseResult):
             experiment_dataset.modeling_selection,
         )
         self.name = model_name
-        self.tags = experiment_dataset.get_tags()
 
-        # Initialize an empty list to hold all fold results
+        # Model metadata
+        self.model_family = get_model_family(model_name)
+        self.model_library = get_model_library(model_name)
+
+        # Dataset metadata (propagated to fold level)
+        self.n_samples = len(experiment_dataset.x_values)
+        self.n_classes = experiment_dataset.class_count
+        unique_classes, counts = np.unique(
+            experiment_dataset.y_values, return_counts=True
+        )
+        self.samples_per_class = ":".join(map(str, counts))
+
+        # Initialize empty list to hold fold results
         self.fold_results: List[FoldResult] = []
 
     def add_result(self, fold_result: FoldResult) -> None:
@@ -37,17 +57,33 @@ class ModelResult(BaseResult):
             raise TypeError("fold_result must be a FoldResult instance")
         self.fold_results.append(fold_result)
 
-    def get_result_tags(self):
-        return {
-            "run_name": self.run_name,
-            "scenario_selection": self.scenario_selection,
-            "sampling_selection": self.sampling_selection,
-            "modeling_selection": self.modeling_selection,
-            "start_time": self.get_start_time(),
-            "end_time": self.get_end_time(),
-            "run_time": self.get_run_time(),
-            **self.tags,
-        }
+    def get_tags(self) -> Dict[str, str]:
+        """
+        Get model-specific tags plus inherited tags.
+
+        Returns:
+        --------
+        Dict[str, str]
+            Tags including:
+            - Inherited: scenario, sampling, modeling, timing
+            - Dataset: n_samples, n_classes, samples_per_class
+            - Model: model_name, model_family, model_library
+        """
+        tags = super().get_tags()
+        tags.update(
+            {
+                # Add dataset metadata
+                "n_samples": str(self.n_samples),
+                "n_classes": str(self.n_classes),
+                "samples_per_class": self.samples_per_class,
+                # Add model metadata
+                "model_name": self.name,
+                "model_family": self.model_family,
+                "model_library": self.model_library,
+            }
+        )
+
+        return tags
 
     def get_avg_metrics(self):
         if not self.fold_results:
