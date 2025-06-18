@@ -95,9 +95,9 @@ print(f"Classes: {set(data['class_values'])}")
 
 ## 🧪 Experiments
 
-### Experiment Types
+### s04 Sampling 
 
-Our framework supports four complementary approaches:
+Our framework supports four complementary approaches (applicable for s04):
 
 | Experiment | Description | Use Case |
 |------------|-------------|----------|
@@ -105,6 +105,14 @@ Our framework supports four complementary approaches:
 | `binary_vs_all` | Each error class vs ALL normal samples (50 vs 1215) | **Realistic imbalanced** scenario for anomaly detection |
 | `multiclass_with_groups` | Multi-class within error groups (5 groups) | **Grouped classification** of related error mechanisms |
 | `multiclass_with_all` | All 25 error classes + normal (26-class problem) | **Comprehensive classification** across all error types |
+
+### s05 + s06 Sampling
+The s05 and s06 sampling frameworks use an elegant **2×2 matrix approach** based on two key decisions:
+
+| | **All Classes** | **Only Strongest Variations** |
+|---|---|---|
+| **Combined Groups** | `combined_all_classes`: Single dataset with normal operation vs all parameter variations. Explores with anormal parameter variations can be distinguished in a large group. | `combined_only_extreme`: Single dataset with normal + most extreme from each parameter group (6 classes). Focuses on the extreme deviations only to see if there is an effect at all. |
+| **Separate Groups** | `separate_all_classes`: Five separate datasets, each classifying all parameter values within one group. Allows to see if (which) variations in the parameter range are notable. | `separate_only_extreme`: Five separate binary datasets (normal vs most extreme per group). Should serve as a dummy-test to compare if the variation (in its most extreme form) is even detectable. |
 
 ### Model Selection Options
 

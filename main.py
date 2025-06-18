@@ -18,7 +18,7 @@ to keep this main script focused on experimental design decisions.
 
 Example Usage:
     python main.py --scenario s04 --sampling binary_vs_ref --modeling paper
-    python main.py --scenario s05 --sampling all --modeling fast
+    python main.py --scenario s06 --sampling combined_all_classes --modeling paper
 
 For detailed configuration options, see config.yml in the project root.
 """
@@ -47,7 +47,7 @@ from src.utils.exceptions import ExperimentEvaluationError
 
 EXPERIMENTAL_DEFAULTS = {
     "scenario_selection": "s06",  # Which PyScrew dataset (s04/s05/s06)
-    "sampling_selection": "binary_for_extremes",  # Which sampling strategy
+    "sampling_selection": "combined_all_classes",  # Which sampling strategy
     "modeling_selection": "paper",  # Which model set (debug/fast/paper/full)
 }
 
@@ -57,7 +57,7 @@ EXPERIMENTAL_DEFAULTS = {
 # in dataset structure and error types:
 # - s04: Assembly errors with normal/faulty conditions per class
 # - s05: Parameter variations in upper workpiece manufacturing
-# - s06: Parameter variations in lower workpiece manufacturing
+# - s06: Parameter variations in lower workpiece manufacturing (2x2 matrix)
 SCENARIO_SAMPLING_COMPATIBILITY = {
     "s04": [
         "binary_vs_ref",
@@ -71,9 +71,10 @@ SCENARIO_SAMPLING_COMPATIBILITY = {
         "multiclass_within_groups",
     ],
     "s06": [
-        "binary_for_extremes",
-        "multiclass_with_all",
-        "multiclass_within_groups",
+        "combined_all_classes",
+        "combined_only_extreme",
+        "separate_all_classes",
+        "separate_only_extreme",
     ],
 }
 
@@ -136,12 +137,12 @@ def parse_arguments() -> ParsedArgs:
             \t%(prog)s                                                         # Run default experiment  
             \t%(prog)s --scenario s04 --sampling binary_vs_ref --modeling fast # Run binary vs reference with fast models
             \t%(prog)s --scenario s05 --sampling all --modeling paper          # Run all s05-compatible strategies
-            \t%(prog)s --scenario s06 --sampling binary_for_extremes           # Valid s06 strategy
+            \t%(prog)s --scenario s06 --sampling combined_all_classes          # s06 2x2 matrix strategy
             
             Scenario-Sampling Compatibility:
             \ts04: binary_vs_ref, binary_vs_all, multiclass_with_groups, multiclass_with_all
             \ts05: binary_for_extremes, multiclass_with_all, multiclass_within_groups  
-            \ts06: binary_for_extremes, multiclass_with_all, multiclass_within_groups  
+            \ts06: combined_all_classes, combined_only_extreme, separate_all_classes, separate_only_extreme
             """
         ).strip(),
     )

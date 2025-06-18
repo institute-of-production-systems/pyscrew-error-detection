@@ -134,7 +134,11 @@ class ExperimentResult(BaseResult):
         # Save to csv (TODO: with with proper naming)
         if True:
             df_experiment_result = self.to_dataframe()
-            file_name = "results/experiment_result.csv"
+
+            from datetime import datetime
+
+            time = self.end_time = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
+            file_name = f"results/result_{self.run_name}_{time}.csv"
             df_experiment_result.to_csv(file_name)
 
         if summary["experiment_failed"]:
