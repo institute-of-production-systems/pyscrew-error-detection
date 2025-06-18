@@ -149,7 +149,7 @@ def sample_s06_combined_all_classes(
     -----------------
     - Scope: ALL parameter groups combined into one dataset
     - Intensity: ALL parameter values, with defaults grouped as "normal"
-    - Classes: 1 normal class + ~20 parameter variation classes
+    - Classes: 1 normal class + ~40 parameter variation classes
     - Logic: Normal operation vs specific parameter deviations
 
     What This Creates:
@@ -161,7 +161,7 @@ def sample_s06_combined_all_classes(
     • Class 3: 202_mold-temperature-35 (temperature variation)
     • Class 4: 203_mold-temperature-45 (temperature variation)
     • ...
-    • Class 20: 512_injection-velocity-170 (velocity variation)
+    • Class 42: 512_injection-velocity-170 (velocity variation)
 
     Default Parameters Grouped as "Normal":
     ---------------------------------------
@@ -529,8 +529,9 @@ def sample_s06_separate_only_extreme(
             # Skip groups where extreme detection fails
             continue
 
-        # Create binary dataset: normal samples vs most extreme parameter in group
-        normal_mask = scenario_condition == "normal"
+        # Get normal samples from within this specific group only
+        group_mask = np.isin(class_values, group_classes)
+        normal_mask = group_mask & (scenario_condition == "normal")
         extreme_mask = class_values == most_extreme_original
 
         # Combine normal and extreme samples for binary classification

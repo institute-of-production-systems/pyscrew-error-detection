@@ -1,5 +1,7 @@
 from typing import List, Tuple
+
 import numpy as np
+
 from src.experiments.experiment_dataset import ExperimentDataset
 from src.utils.exceptions import DataSamplingError
 
@@ -8,12 +10,13 @@ def get_sampling_function(scenario_selection: str, sampling_selection: str):
     """
     Get the specific sampling function for the given scenario-sampling combination.
 
-    Updated to support the new 2x2 sampling matrix for s06:
+    Updated to support the new 2x2 sampling matrix for s05 and s06:
     - combined_all_classes: All groups combined, all parameter values
     - combined_only_extreme: All groups combined, only most extreme values
     - separate_all_classes: Each group separate, all parameter values
     - separate_only_extreme: Each group separate, only most extreme values
     """
+
     if scenario_selection == "s04":
         from .scenarios.s04_sampling import (
             sample_s04_binary_vs_all,
@@ -32,20 +35,21 @@ def get_sampling_function(scenario_selection: str, sampling_selection: str):
 
     elif scenario_selection == "s05":
         from .scenarios.s05_sampling import (
-            sample_s05_binary_for_extremes,
-            sample_s05_multiclass_with_all,
-            sample_s05_multiclass_within_groups,
+            sample_s05_combined_all_classes,
+            sample_s05_combined_only_extreme,
+            sample_s05_separate_all_classes,
+            sample_s05_separate_only_extreme,
         )
 
         s05_functions = {
-            "binary_for_extremes": sample_s05_binary_for_extremes,
-            "multiclass_with_all": sample_s05_multiclass_with_all,
-            "multiclass_within_groups": sample_s05_multiclass_within_groups,
+            "separate_only_extreme": sample_s05_separate_only_extreme,
+            "combined_only_extreme": sample_s05_combined_only_extreme,
+            "separate_all_classes": sample_s05_separate_all_classes,
+            "combined_all_classes": sample_s05_combined_all_classes,
         }
         return s05_functions[sampling_selection]
 
     elif scenario_selection == "s06":
-        # Import new 2x2 matrix sampling functions
         from .scenarios.s06_sampling import (
             sample_s06_combined_all_classes,
             sample_s06_combined_only_extreme,
@@ -54,10 +58,10 @@ def get_sampling_function(scenario_selection: str, sampling_selection: str):
         )
 
         s06_functions = {
-            "combined_all_classes": sample_s06_combined_all_classes,
+            "separate_only_extreme": sample_s06_separate_only_extreme,
             "combined_only_extreme": sample_s06_combined_only_extreme,
             "separate_all_classes": sample_s06_separate_all_classes,
-            "separate_only_extreme": sample_s06_separate_only_extreme,
+            "combined_all_classes": sample_s06_combined_all_classes,
         }
         return s06_functions[sampling_selection]
 

@@ -47,7 +47,7 @@ from src.utils.exceptions import ExperimentEvaluationError
 
 EXPERIMENTAL_DEFAULTS = {
     "scenario_selection": "s06",  # Which PyScrew dataset (s04/s05/s06)
-    "sampling_selection": "combined_all_classes",  # Which sampling strategy
+    "sampling_selection": "separate_only_extreme",  # Which sampling strategy
     "modeling_selection": "paper",  # Which model set (debug/fast/paper/full)
 }
 
@@ -57,7 +57,7 @@ EXPERIMENTAL_DEFAULTS = {
 # in dataset structure and error types:
 # - s04: Assembly errors with normal/faulty conditions per class
 # - s05: Parameter variations in upper workpiece manufacturing
-# - s06: Parameter variations in lower workpiece manufacturing (2x2 matrix)
+# - s06: Parameter variations in lower workpiece manufacturing
 SCENARIO_SAMPLING_COMPATIBILITY = {
     "s04": [
         "binary_vs_ref",
@@ -66,9 +66,10 @@ SCENARIO_SAMPLING_COMPATIBILITY = {
         "multiclass_with_all",
     ],
     "s05": [
-        "binary_for_extremes",
-        "multiclass_with_all",
-        "multiclass_within_groups",
+        "combined_all_classes",
+        "combined_only_extreme",
+        "separate_all_classes",
+        "separate_only_extreme",
     ],
     "s06": [
         "combined_all_classes",

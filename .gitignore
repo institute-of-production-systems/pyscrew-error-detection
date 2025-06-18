@@ -1,6 +1,5 @@
 tests/
 results/*
-scripts/*.py
 notes.txt
 
 # Don'track temporary result output (used during development)

@@ -137,7 +137,7 @@ class ExperimentResult(BaseResult):
 
             from datetime import datetime
 
-            time = self.end_time = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
+            time = self.end_time = datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
             file_name = f"results/result_{self.run_name}_{time}.csv"
             df_experiment_result.to_csv(file_name)
 

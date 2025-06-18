@@ -1,10 +1,10 @@
 # %%
-import pandas as pd
 import matplotlib.pyplot as plt
+import pandas as pd
 import seaborn as sns
 
 # Daten laden
-result_path = "../results/results_s05_binary_for_extremes.csv"
+result_path = "../results/result_s06/separate_only_extreme"
 df_result = pd.read_csv(result_path, index_col=0)
 
 # Pivot-Tabelle: Mittelwert des F1-Scores je Modell & Dataset
@@ -25,8 +25,6 @@ plt.ylabel("Modell")
 plt.tight_layout()
 plt.show()
 
-# %%
-import pandas as pd
 
 # Gruppieren nach Modell & Dataset, dann Mittelwert & Varianz berechnen
 grouped = df_result.groupby(["model", "dataset"])["f1_score"].agg(["mean", "var"])
