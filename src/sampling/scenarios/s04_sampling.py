@@ -4,7 +4,7 @@ import numpy as np
 
 from src.experiments.experiment_dataset import ExperimentDataset
 from src.sampling.groups import load_groups
-from src.utils.exceptions import SamplingError
+from src.utils.exceptions import DataSamplingError
 
 
 def sample_s04_binary_vs_ref(
@@ -61,7 +61,7 @@ def sample_s04_binary_vs_ref(
 
     # Check if we have any datasets
     if not datasets:
-        raise SamplingError(
+        raise DataSamplingError(
             f"No valid datasets could be created for binary_vs_ref experiment"
         )
 
@@ -95,7 +95,7 @@ def sample_s04_binary_vs_all(
 
         # Check for classes with insufficient samples
         if n_normal == 0 or n_faulty == 0:
-            raise SamplingError(
+            raise DataSamplingError(
                 f"Could not create vs_all dataset for class {class_value} due to missing samples "
                 f"(n_normal={n_normal}, n_faulty={n_faulty})"
             )
@@ -204,7 +204,7 @@ def sample_s04_multiclass_with_groups(
 
     # Check if we have any datasets
     if not datasets:
-        raise SamplingError(
+        raise DataSamplingError(
             f"No valid datasets could be created for multiclass_group experiment"
         )
 
@@ -234,7 +234,7 @@ def sample_s04_multiclass_with_all(
 
         # Check for classes with insufficient samples
         if n_normal == 0 or n_faulty == 0:
-            raise SamplingError(
+            raise DataSamplingError(
                 f"Could not create multiclass_all dataset: class {class_val} has missing samples "
                 f"(n_normal={n_normal}, n_faulty={n_faulty})"
             )
@@ -256,7 +256,7 @@ def sample_s04_multiclass_with_all(
 
     # Final check for at least some samples in both categories
     if n_normal == 0 or n_faulty == 0:
-        raise SamplingError(
+        raise DataSamplingError(
             f"Could not create multiclass_all dataset: missing samples "
             f"(n_normal={n_normal}, n_faulty={n_faulty})"
         )

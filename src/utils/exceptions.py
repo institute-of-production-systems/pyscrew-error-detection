@@ -1,43 +1,75 @@
-class ExperimentError(Exception):
-    """Base class for experiment errors with optional context."""
+# =============================================================================
+# PIPELINE PREPARATION ERRORS (Early stages)
+# =============================================================================
+
+
+class DataPreparationError(Exception):
+    """
+    Errors during data loading and preprocessing.
+
+    Examples: PyScrew data loading failures, file not found,
+    PAA transformation errors, normalization issues.
+    """
 
     pass
 
 
-class FatalExperimentError(ExperimentError):
+class DataSamplingError(Exception):
+    """
+    Errors during dataset sampling and generation.
+
+    Examples: insufficient samples for sampling strategy,
+    missing classes in data, invalid sampling configuration,
+    scenario-sampling compatibility issues.
+    """
+
+    pass
+
+
+# =============================================================================
+# EVALUATION EXECUTION ERRORS (ML pipeline stages)
+# =============================================================================
+
+
+class ExperimentEvaluationError(Exception):
     """
     Critical errors that stop the entire experiment.
 
-    Examples: MLflow server unreachable, data files missing,
-    invalid experiment configuration.
+    Examples: MLflow server unreachable, invalid experiment configuration,
+    too many dataset failures, fundamental setup issues.
     """
 
     pass
 
 
-class ModelEvaluationError(ExperimentError):
+class DatasetEvaluationError(Exception):
+    """
+    Errors during dataset processing in ML pipeline.
+
+    Examples: cross-validation setup failures, incompatible data formats,
+    too many model failures for a dataset.
+    """
+
+    pass
+
+
+class ModelEvaluationError(Exception):
     """
     Errors during individual model evaluation.
 
-    The experiment continues with remaining models, but tracks
-    which models failed and why for debugging.
+    Examples: model initialization failures, training errors,
+    incompatible data formats, too many fold failures.
     """
 
     pass
 
 
-class DatasetPreparationError(ExperimentError):
+class FoldEvaluationError(Exception):
     """
-    Errors during data loading or preprocessing.
+    Errors during individual fold evaluation.
 
-    Examples: corrupted files, incompatible data formats,
-    insufficient samples for cross-validation.
+    Examples: training failures, prediction errors, memory issues,
+    data format problems in specific CV folds.
     """
-
-    pass
-
-
-class SamplingError(Exception):
-    """Raised when a dataset cannot be properly created due to sampling issues."""
 
     pass

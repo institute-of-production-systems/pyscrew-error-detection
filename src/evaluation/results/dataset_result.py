@@ -1,8 +1,9 @@
-from typing import Any, Dict, List
+from typing import Dict, List
 
-from numpy import unique
+import numpy as np
 
 from src.experiments.experiment_dataset import ExperimentDataset
+from src.utils.exceptions import ModelEvaluationError
 
 from .base_result import BaseResult
 from .model_result import ModelResult
@@ -46,7 +47,7 @@ class DatasetResult(BaseResult):
         self.n_classes = experiment_dataset.class_count
 
         # Calculate samples_per_class
-        unique_classes, counts = unique(experiment_dataset.y_values, return_counts=True)
+        _, counts = np.unique(experiment_dataset.y_values, return_counts=True)
         self.samples_per_class = ":".join(map(str, counts))
 
         # Store only lightweight metadata for plotting/analysis
@@ -76,20 +77,23 @@ class DatasetResult(BaseResult):
         tags = super().get_tags()
         tags.update(
             {
-                # Add dataset metadata
-                "n_samples": str(self.n_samples),
-                "n_classes": str(self.n_classes),
+                # Add dataset metadata (2: Dataset Level)
+                "n_samples": self.n_samples,
+                "n_classes": self.n_classes,
                 "samples_per_class": self.samples_per_class,
             }
         )
-        return tags
-
-    def get_performance_summary(self) -> Dict[str, Any]:
-        """Get performance summary across all models for this dataset."""
-        # TODO: Implement aggregation of model results...
-        pass
+        return self.format_tags(tags)
 
     def __repr__(self) -> str:
-        """String representation showing dataset name and model count."""
+        """String representation showing dataset name, model count, and failure info."""
         status = "completed" if self.end_time else "running"
-        return f"DatasetResult({self.name}, {len(self.model_results)} models, {status})"
+
+        failure_info = ""
+        if self.failed:
+            status = "failed"
+        elif any(mr.failed for mr in self.model_results):
+            failed_count = sum(1 for mr in self.model_results if mr.failed)
+            failure_info = f", {failed_count} models failed"
+
+        return f"DatasetResult({self.name}, {len(self.model_results)} models, {status}{failure_info})"

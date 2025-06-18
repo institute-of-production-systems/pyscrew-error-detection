@@ -33,7 +33,7 @@ import yaml
 
 from src.experiments import ExperimentRunner
 from src.utils import get_logger
-from src.utils.exceptions import FatalExperimentError
+from src.utils.exceptions import ExperimentEvaluationError
 
 # =============================================================================
 # EXPERIMENTAL DESIGN CONFIGURATION
@@ -338,7 +338,7 @@ def main() -> int:
 
                 successful += 1
 
-            except FatalExperimentError as e:
+            except ExperimentEvaluationError as e:
                 # Handle expected experiment failures (MLflow issues, data problems, etc.)
                 logger.error(f"Fatal error in {sampling_strategy}: {str(e)}")
                 failed += 1

@@ -3,7 +3,7 @@ from typing import List, Tuple
 import numpy as np
 
 from src.experiments.experiment_dataset import ExperimentDataset
-from src.utils.exceptions import SamplingError
+from src.utils.exceptions import DataSamplingError
 
 
 def get_sampling_function(scenario_selection: str, sampling_selection: str):
@@ -71,6 +71,6 @@ def sample_datasets(
             *processed_data, scenario_selection, sampling_selection, modeling_selection
         )
     except KeyError:
-        raise SamplingError(
+        raise DataSamplingError(
             f"Unsupported sampling '{sampling_selection}' for scenario '{scenario_selection}'"
         )

@@ -10,6 +10,7 @@ from sktime.datatypes._panel._convert import from_2d_array_to_nested
 from src.evaluation.get_metrics import get_metrics
 from src.experiments.experiment_dataset import ExperimentDataset
 from src.models import get_model_family, get_model_library
+from src.utils.exceptions import FoldEvaluationError
 
 from .base_result import BaseResult
 
@@ -58,9 +59,7 @@ class FoldResult(BaseResult):
         # Dataset metadata (propagated from parent levels)
         self.n_samples = len(experiment_dataset.x_values)
         self.n_classes = experiment_dataset.class_count
-        unique_classes, counts = np.unique(
-            experiment_dataset.y_values, return_counts=True
-        )
+        _, counts = np.unique(experiment_dataset.y_values, return_counts=True)
         self.samples_per_class = ":".join(map(str, counts))
 
         # Fold-specific information
@@ -79,18 +78,7 @@ class FoldResult(BaseResult):
         self.time_to_pred = 0.0
 
     def train_and_evaluate(self, train_idx: np.ndarray, test_idx: np.ndarray) -> None:
-        """
-        Train model and evaluate on test set.
-
-        Parameters:
-        -----------
-        model : Union[BaseEstimator, BaseClassifier]
-            Initialized model to train
-        train_idx : np.ndarray
-            Indices for training samples
-        test_idx : np.ndarray
-            Indices for test samples
-        """
+        """Train model and evaluate on test set."""
         try:
             # Store fold sizes
             self.n_train = len(train_idx)
@@ -106,22 +94,14 @@ class FoldResult(BaseResult):
             self._train_model(x_train, y_train)
             self._evaluate_model(x_test, y_test)
 
-            # Clear dataset reference to save memory
+        except FoldEvaluationError:
+            raise  # Re-raise the custom exceptions
+        except (ValueError, TypeError, RuntimeError, MemoryError) as e:
+            # Convert to exception type
+            raise FoldEvaluationError(f"Fold {self.fold_index} failed: {str(e)}") from e
+        finally:
+            # Always cleanup memory, regardless of success or failure
             self._experiment_dataset = None
-
-        except Exception as e:
-            # Handle errors gracefully
-            self.metrics = {
-                "error": 1.0,
-                "accuracy": 0.0,
-                "f1_score": 0.0,
-                "precision": 0.0,
-                "recall": 0.0,
-            }
-            self.y_true = np.array([0])
-            self.y_pred = np.array([0])
-            self.time_to_train = 0.0
-            self.time_to_pred = 0.0
 
     def _train_model(self, x_train, y_train) -> None:
         """Train the model with timing."""
@@ -197,25 +177,38 @@ class FoldResult(BaseResult):
         tags = super().get_tags()
         tags.update(
             {
-                # Add dataset metadata
-                "n_samples": str(self.n_samples),
-                "n_classes": str(self.n_classes),
+                # Add dataset metadata (2: Dataset Level)
+                "n_samples": self.n_samples,
+                "n_classes": self.n_classes,
                 "samples_per_class": self.samples_per_class,
-                # Add model metadata
+                # Add model metadata (3: Model Level)
                 "model_name": self.model_name,
                 "model_family": self.model_family,
                 "model_library": self.model_library,
-                # Add fold metadata
-                "fold_index": str(self.fold_index),
-                "n_train": str(self.n_train) if self.n_train is not None else None,
-                "n_test": str(self.n_test) if self.n_test is not None else None,
+                # Add fold metadata (4: Fold Level)
+                "fold_index": self.fold_index,
+                "n_train": self.n_train,
+                "n_test": self.n_test,
             }
         )
 
-        return tags
+        return self.format_tags(tags)
 
     def get_metrics(self) -> Dict[str, float]:
         """Get metrics for MLflow logging."""
+        if self.failed:
+            # Return empty metrics for failed folds
+            from src.evaluation.get_metrics import get_metrics
+
+            empty_metrics = get_metrics()
+            empty_metrics.update(
+                {
+                    "time_to_train": 0.0,
+                    "time_to_pred": 0.0,
+                }
+            )
+            return empty_metrics
+
         metrics = self.metrics.copy()
         metrics.update(
             {
@@ -233,11 +226,17 @@ class FoldResult(BaseResult):
 
     def get_confusion_matrix(self) -> np.ndarray:
         """Get confusion matrix for this fold."""
+        if self.failed or self.y_true is None or self.y_pred is None:
+            # Return empty confusion matrix for failed folds
+            return np.array([[]])
 
         return confusion_matrix(self.y_true, self.y_pred)
 
     def __repr__(self) -> str:
-        """String representation showing fold performance."""
+        """String representation showing fold performance or failure status."""
+        if self.failed:
+            return f"FoldResult(fold={self.fold_index}, FAILED: {self.failure_reason})"
+
         f1 = self.metrics.get("f1_score", 0)
         acc = self.metrics.get("accuracy", 0)
         return f"FoldResult(fold={self.fold_index}, f1={f1:.3f}, acc={acc:.3f})"

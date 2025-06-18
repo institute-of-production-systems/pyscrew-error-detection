@@ -1,6 +1,6 @@
 from typing import List
 
-from pandas import DataFrame
+import pandas as pd
 
 from .base_result import BaseResult
 from .dataset_result import DatasetResult
@@ -59,20 +59,118 @@ class ExperimentResult(BaseResult):
             raise TypeError("'dataset_result' must be a DatasetResult instance")
         self.dataset_results.append(dataset_result)
 
-    def to_dataframe(self) -> DataFrame:
-        """
-        Convert hierarchical results to a pandas DataFrame for analysis.
+    def to_dataframe(self) -> pd.DataFrame:
+        """Convert hierarchical results to flat DataFrame for analysis."""
+        rows = []
+        for dataset_result in self.dataset_results:
+            for model_result in dataset_result.model_results:
+                for fold_result in model_result.fold_results:
+                    row = {
+                        # 1: Experiment level
+                        "experiment": self.sampling_selection,
+                        "scenario": self.scenario_selection,
+                        "modeling": self.modeling_selection,
+                        # 2: Dataset level
+                        "dataset": dataset_result.name,
+                        "n_samples": dataset_result.n_samples,
+                        "n_classes": dataset_result.n_classes,
+                        # 3: Model level
+                        "model": model_result.name,
+                        "model_family": model_result.model_family,
+                        # 4: Fold level
+                        "fold": fold_result.fold_index,
+                        **fold_result.metrics,  # All metrics
+                        # F: Failure tags
+                        "failed_experiment": self.failed,
+                        "failed_dataset": dataset_result.failed,
+                        "failed_model": model_result.failed,
+                        "failed_fold": fold_result.failed,
+                    }
+                    rows.append(row)
+        return pd.DataFrame(rows)
 
-        Returns:
-        --------
-        pandas.DataFrame
-            Flattened view of all results with columns for:
-            experiment, dataset, model, fold, and all metrics
-        """
-        # TODO: Implement an iteration of all dataset, model, fold results...
-        pass
+    def get_failure_summary(self) -> dict:
+        """Get summary of failures across the experiment."""
+        total_datasets = len(self.dataset_results)
+        failed_datasets = sum(1 for dr in self.dataset_results if dr.failed)
+
+        total_models = sum(len(dr.model_results) for dr in self.dataset_results)
+        failed_models = sum(
+            sum(1 for mr in dr.model_results if mr.failed)
+            for dr in self.dataset_results
+        )
+
+        total_folds = sum(
+            sum(len(mr.fold_results) for mr in dr.model_results)
+            for dr in self.dataset_results
+        )
+        failed_folds = sum(
+            sum(
+                sum(1 for fr in mr.fold_results if fr.failed) for mr in dr.model_results
+            )
+            for dr in self.dataset_results
+        )
+
+        return {
+            "experiment_failed": self.failed,
+            "datasets": {"total": total_datasets, "failed": failed_datasets},
+            "models": {"total": total_models, "failed": failed_models},
+            "folds": {"total": total_folds, "failed": failed_folds},
+        }
+
+    def end(self) -> None:
+        """Mark pipeline complete, calculate runtime, and log failure summary."""
+        # Call parent's end() method to handle timing
+        super().end()
+
+        # Get logger for this module
+        from src.utils import get_logger
+
+        logger = get_logger(__name__)
+
+        # Log completion with failure summary
+        summary = self.get_failure_summary()
+
+        # Save to csv (TODO: with with proper naming)
+        if True:
+            df_experiment_result = self.to_dataframe()
+            file_name = "results/experiment_result.csv"
+            df_experiment_result.to_csv(file_name)
+
+        if summary["experiment_failed"]:
+            logger.error(f"Experiment FAILED: {self.failure_reason}")
+        elif (
+            summary["datasets"]["failed"] > 0
+            or summary["models"]["failed"] > 0
+            or summary["folds"]["failed"] > 0
+        ):
+            logger.warning(f"Experiment completed with failures:")
+            logger.warning(
+                f"  Datasets: {summary['datasets']['failed']}/{summary['datasets']['total']} failed"
+            )
+            logger.warning(
+                f"  Models: {summary['models']['failed']}/{summary['models']['total']} failed"
+            )
+            logger.warning(
+                f"  Folds: {summary['folds']['failed']}/{summary['folds']['total']} failed"
+            )
+        else:
+            logger.info(f"Experiment completed successfully:")
+            logger.info(
+                f"  {summary['datasets']['total']} datasets, {summary['models']['total']} models, {summary['folds']['total']} folds - all successful!"
+            )
 
     def __repr__(self) -> str:
-        """String representation showing experiment status and dataset count."""
+        """String representation showing experiment status and failure info."""
         status = "completed" if self.end_time else "running"
-        return f"ExperimentResult({self.sampling_selection}, {len(self.dataset_results)} datasets, {status})"
+
+        # Add failure info if there are any failures
+        failure_info = ""
+        if self.failed:
+            status = "failed"
+
+        elif any(dr.failed for dr in self.dataset_results):
+            failed_count = sum(1 for dr in self.dataset_results if dr.failed)
+            failure_info = f", {failed_count} datasets failed"
+
+        return f"ExperimentResult({self.sampling_selection}, {len(self.dataset_results)} datasets, {status}{failure_info})"

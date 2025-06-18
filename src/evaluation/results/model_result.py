@@ -72,55 +72,76 @@ class ModelResult(BaseResult):
         tags = super().get_tags()
         tags.update(
             {
-                # Add dataset metadata
-                "n_samples": str(self.n_samples),
-                "n_classes": str(self.n_classes),
+                # Add dataset metadata (2: Dataset Level)
+                "n_samples": self.n_samples,
+                "n_classes": self.n_classes,
                 "samples_per_class": self.samples_per_class,
-                # Add model metadata
+                # Add model metadata (3: Model Level)
                 "model_name": self.name,
                 "model_family": self.model_family,
                 "model_library": self.model_library,
             }
         )
 
-        return tags
+        return self.format_tags(tags)
 
     def get_metrics(self) -> Dict[str, float]:
-        """Get aggregated metrics. Empty if no folds, single fold as-is, multiple folds averaged."""
+        """Get aggregated metrics from successful folds only."""
 
-        # No folds completed
-        if not self.fold_results:
-            return {}
+        # Filter out failed folds for metric calculation
+        successful_folds = [fr for fr in self.fold_results if not fr.failed]
 
-        # Single fold - return as-is with std=0
-        if len(self.fold_results) == 1:
-            metrics = self.fold_results[0].metrics.copy()
+        # No successful folds
+        if not successful_folds:
+            from src.evaluation.get_metrics import get_metrics
+
+            return get_metrics()  # Returns initialized empty metrics
+
+        # Single successful fold - return as-is with std=0
+        if len(successful_folds) == 1:
+            metrics = successful_folds[0].metrics.copy()
             # Add std=0 for all metrics
             for key in list(metrics.keys()):
                 metrics[f"{key}_std"] = 0.0
             return metrics
 
-        # Multiple folds - calculate mean and std
+        # Multiple successful folds - calculate mean and std
         metrics = {}
-        metric_names = self.fold_results[0].metrics.keys()
+        metric_names = successful_folds[0].metrics.keys()
 
         for metric_name in metric_names:
-            values = [fold.metrics[metric_name] for fold in self.fold_results]
-            metrics[metric_name] = np.mean(values)
-            metrics[f"{metric_name}_std"] = np.std(values)
+            values = [fold.metrics[metric_name] for fold in successful_folds]
+            metrics[metric_name] = float(np.mean(values))
+            metrics[f"{metric_name}_std"] = float(np.std(values))
 
         return metrics
 
     def __repr__(self) -> str:
+        status = "completed" if self.end_time else "running"
+
+        if self.failed:
+            return f"ModelResult({self.name}, FAILED: {self.failure_reason}, {status})"
+
         if not self.fold_results:
-            return f"ModelResult({self.name}, no folds yet)"
+            return f"ModelResult({self.name}, no folds, {status})"
 
+        # Count successful vs failed folds
+        successful_folds = [fr for fr in self.fold_results if not fr.failed]
+        failed_count = len(self.fold_results) - len(successful_folds)
+
+        if not successful_folds:
+            return f"ModelResult({self.name}, all {len(self.fold_results)} folds failed, {status})"
+
+        # Get metrics from successful folds only
         metrics = self.get_metrics()
-        f1_key = "f1_score" if len(self.fold_results) == 1 else "f1_score_avg"
-        f1 = metrics.get(f1_key, 0)
+        f1 = metrics.get("f1_score", 0)
+        f1_std = metrics.get("f1_score_std", 0)
 
-        if len(self.fold_results) == 1:
-            return f"ModelResult({self.name}, f1={f1:.2f}, 1 fold)"
+        fold_info = f"{len(successful_folds)} folds"
+        if failed_count > 0:
+            fold_info += f" ({failed_count} failed)"
+
+        if len(successful_folds) == 1:
+            return f"ModelResult({self.name}, f1={f1:.3f}, {fold_info}, {status})"
         else:
-            f1_std = metrics.get("f1_score_std", 0)
-            return f"ModelResult({self.name}, f1={f1:.2f}±{f1_std:.2f}, {len(self.fold_results)} folds)"
+            return f"ModelResult({self.name}, f1={f1:.3f}±{f1_std:.3f}, {fold_info}, {status})"

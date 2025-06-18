@@ -1,4 +1,6 @@
 tests/
+results/*
+scripts/*
 notes.txt
 
 # Don'track temporary result output (used during development)

@@ -58,13 +58,17 @@ log_level: "INFO"
 # Default MLflow port is 5000, change if you have conflicts
 mlflow_port: 5000
 
+# Stop on first error (true) vs continue (false) and just collect the errors
+# Note: Used during development, should be false in deployment settings 
+fail_fast: true  
+
+# -----------------------------------------------------------------------------
+# ADVANCED/EXPERIMENTAL CONFIGURATION (unused)
+# -----------------------------------------------------------------------------
+
 # Whether to automatically launch MLflow server if not running
 # Set to false if you prefer to manage MLflow server manually
 mlflow_auto_launch: true
-
-# -----------------------------------------------------------------------------
-# ADVANCED/EXPERIMENTAL CONFIGURATION
-# -----------------------------------------------------------------------------
 
 # Whether to save detailed fold-level artifacts (confusion matrices, etc.)
 # Set to false to reduce storage overhead for large experiments

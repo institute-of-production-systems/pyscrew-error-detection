@@ -4,7 +4,7 @@ import numpy as np
 
 from src.experiments.experiment_dataset import ExperimentDataset
 from src.sampling.groups import load_groups
-from src.utils.exceptions import SamplingError
+from src.utils.exceptions import DataSamplingError
 
 
 def _extract_parameter_value(class_name, group_name):
@@ -146,7 +146,7 @@ def sample_s06_multiclass_within_groups(
 
     # Check if we have any datasets
     if not datasets:
-        raise SamplingError(
+        raise DataSamplingError(
             f"No valid datasets could be created for multiclass_with_groups experiment (control group excluded)"
         )
 
@@ -254,7 +254,7 @@ def sample_s06_binary_for_extremes(
 
     # Check if we have any datasets
     if not datasets:
-        raise SamplingError(
+        raise DataSamplingError(
             f"No valid datasets could be created for binary_for_extremes experiment (control group excluded)"
         )
 

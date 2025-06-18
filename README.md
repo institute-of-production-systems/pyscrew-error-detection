@@ -126,12 +126,7 @@ python main.py
 
 **Run specific experiment:**
 ```bash
-python main.py --experiment binary_vs_ref --models fast
-```
-
-**Run with more cross-validation folds:**
-```bash
-python main.py --cv-folds 10
+python main.py --scenario s04 --sampling binary_vs_ref --modeling fast
 ```
 
 **Quiet mode for production:**
@@ -146,12 +141,12 @@ python main.py --quiet
 from src.experiments import ExperimentRunner
 
 runner = ExperimentRunner(
+    scenario_selection="s04",           # Configurable dataset
     sampling_selection="binary_vs_ref",
     modeling_selection="paper",
-    scenario_selection="s04",           # Configurable dataset
-    target_length=2000,          # Fixed preprocessing  
-    cv_folds=5,                  # Configurable via CLI
-    random_seed=42,              # Configurable via CLI
+    cv_folds=5,                  # Configurable via config.yml
+    random_seed=42,              # Configurable via config.yml
+    fail_fast=False,             # Continue on failures vs stop immediately
     n_jobs=-1                    # Use all cores
 )
 
@@ -163,10 +158,9 @@ results = runner.run()
 python main.py --help
 
 # Core options:
---experiment {binary_vs_ref,binary_vs_all,multiclass_with_groups,multiclass_with_all,all}
---models {debug,fast,paper,full,sklearn,sktime}
---cv-folds N
---random-seed N
+--scenario {s04,s05,s06}
+--sampling {binary_vs_ref,binary_vs_all,multiclass_with_groups,multiclass_with_all,all}
+--modeling {debug,fast,paper,full,sklearn,sktime}
 --quiet / --verbose
 ```
 
@@ -200,6 +194,13 @@ mlflow ui --port 5000
 - **Traditional ML**: Random Forest, SVM, Logistic Regression 
 - **Time Series**: ROCKET, Time Series Forest, BOSS Ensemble
 - **Advanced**: Elastic Ensemble, Shapelet Transform
+
+### Robust Failure Handling
+
+- **Hierarchical exception handling**: Each level (Experiment→Dataset→Model→Fold) handles failures gracefully
+- **Configurable behavior**: `fail_fast=false` continues despite failures, `fail_fast=true` stops immediately  
+- **Rich failure tracking**: CSV exports include failure flags at all levels for post-analysis
+- **Production ready**: Experiments complete even with partial failures, providing maximum data for analysis
 
 ### Cross-Validation Strategy
 
@@ -309,4 +310,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-> 💡 **Tip**: Start with `python main.py --experiment binary_vs_ref --models fast` for a quick overview, then explore the MLflow UI at `http://localhost:5000` to dive into detailed results!
+> 💡 **Tip**: Start with `python main.py --scenario s04 --sampling binary_vs_ref --modeling fast` for a quick overview, then explore the MLflow UI at `http://localhost:5000` to dive into detailed results!

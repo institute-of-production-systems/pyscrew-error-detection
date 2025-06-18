@@ -1,6 +1,5 @@
 import logging
 import os
-from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -13,7 +12,7 @@ from src.evaluation.results import (
     ModelResult,
 )
 from src.utils import get_logger
-from src.utils.exceptions import FatalExperimentError
+from src.utils.exceptions import ExperimentEvaluationError
 
 
 class MLflowManager:
@@ -45,11 +44,10 @@ class MLflowManager:
             mlflow.set_tracking_uri(f"http://localhost:{self.port}")
             mlflow.set_experiment(sampling_selection)
             # Disable auto-logging for explicit control
-            mlflow.autolog(disable=True)
-            mlflow.sklearn.autolog(disable=True)
+            self._suppress_mlflow_logging()
             self.logger.info(f"MLflow tracking initialized for '{sampling_selection}'")
         except Exception as e:
-            raise FatalExperimentError(
+            raise ExperimentEvaluationError(
                 f"MLflow initialization failed: {str(e)}. "
                 "Please ensure MLflow server is running."
             ) from e
@@ -115,36 +113,6 @@ class MLflowManager:
     # ================================
     # HELPER METHODS
     # ================================
-
-    def _log_fold_stability_analysis(self, model_result: ModelResult) -> None:
-        """Log fold stability analysis as metrics and tags."""
-        try:
-            for metric_name in ["f1_score", "accuracy", "precision", "recall"]:
-                if (
-                    hasattr(model_result, "mean_metrics")
-                    and metric_name in model_result.mean_metrics
-                ):
-                    stability = model_result.get_fold_stability(metric_name)
-                    mlflow.set_tag(f"{metric_name}_stability", stability)
-
-                    # Log coefficient of variation
-                    summary = model_result.get_metric_summary(metric_name)
-                    mlflow.log_metric(f"{metric_name}_cv", summary["cv"])
-
-        except Exception as e:
-            self.logger.warning(f"Failed to log stability analysis: {str(e)}")
-
-    def _log_confusion_matrix(self, model_result: ModelResult) -> None:
-        """Log aggregated confusion matrix as MLflow artifact."""
-        cm_path = f"{model_result.name}_aggregated_cm.csv"
-        try:
-            pd.DataFrame(model_result.confusion_matrix).to_csv(cm_path, index=False)
-            mlflow.log_artifact(cm_path)
-        except Exception as e:
-            self.logger.warning(f"Failed to log confusion matrix: {str(e)}")
-        finally:
-            if os.path.exists(cm_path):
-                os.remove(cm_path)
 
     def _save_and_log_confusion_matrix(self, confusion_matrix: np.ndarray) -> None:
         """Save confusion matrix as CSV and log as MLflow artifact."""
