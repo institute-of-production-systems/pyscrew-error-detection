@@ -25,6 +25,11 @@ Industrial screw driving operations are critical in manufacturing processes, yet
 
 This work extends our previous research on supervised error detection in industrial screw driving operations, originally presented at ITISE 2025. The framework has been generalized to accommodate the full range of PyScrew datasets, enabling comparative analysis across different operational scenarios and assembly conditions.
 
+### Publications 
+- **West, N., & Deuse, J.** (2025). PyScrew: A Comprehensive Dataset Collection from Industrial Screw Driving Experiments. *arXiv preprint*. [![arXiv](https://img.shields.io/badge/arXiv-2505.11925-b31b1b.svg)](https://arxiv.org/abs/2505.11925)
+
+- **West, N., Klute, M., Heim, H.-P., & Deuse, J.** (2025). Cross-Process Error Detection in Industrial Screw Driving Operations Using Time Series Classification. *Proceedings of the 7th World Symposium on Software Engineering (WSSE '25)*, Okayama, Japan. ACM. [![DOI](https://img.shields.io/badge/ACM-979--8--4007--1577--8-blue.svg)](http://wsse2025.sciei.org/)
+
 ## 🏗️ Project Structure
 
 ```
